@@ -2,6 +2,10 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import DepartmentManagement from '@/components/admin/DepartmentManagement';
+import ModuleManagement from '@/components/admin/ModuleManagement';
+import ProfessorManagement from '@/components/admin/ProfessorManagement';
+import StudentManagement from '@/components/admin/StudentManagement';
+import AdminReports from '@/components/admin/AdminReports';
 
 const AdminDashboard = () => {
   return (
@@ -25,31 +29,19 @@ const AdminDashboard = () => {
         </TabsContent>
 
         <TabsContent value="modules" className="space-y-6">
-          <div className="text-center py-12">
-            <h3 className="text-lg font-semibold mb-2">Module Management</h3>
-            <p className="text-gray-600">Module management interface will be implemented here.</p>
-          </div>
+          <ModuleManagement />
         </TabsContent>
 
         <TabsContent value="professors" className="space-y-6">
-          <div className="text-center py-12">
-            <h3 className="text-lg font-semibold mb-2">Professor Management</h3>
-            <p className="text-gray-600">Professor management interface will be implemented here.</p>
-          </div>
+          <ProfessorManagement />
         </TabsContent>
 
         <TabsContent value="students" className="space-y-6">
-          <div className="text-center py-12">
-            <h3 className="text-lg font-semibold mb-2">Student Management</h3>
-            <p className="text-gray-600">Student management interface will be implemented here.</p>
-          </div>
+          <StudentManagement />
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-6">
-          <div className="text-center py-12">
-            <h3 className="text-lg font-semibold mb-2">Global Reports</h3>
-            <p className="text-gray-600">Global reporting interface will be implemented here.</p>
-          </div>
+          <AdminReports />
         </TabsContent>
       </Tabs>
     </div>

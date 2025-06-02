@@ -1,33 +1,13 @@
 
 import React from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import AppSidebar from './Sidebar';
-import StudentDashboard from '../dashboard/StudentDashboard';
-import ProfessorDashboard from '../dashboard/ProfessorDashboard';
-import AdminDashboard from '../dashboard/AdminDashboard';
-import SuperAdminDashboard from '../dashboard/SuperAdminDashboard';
 
-const DashboardLayout = () => {
-  const { user } = useAuth();
+interface DashboardLayoutProps {
+  children: React.ReactNode;
+}
 
-  const renderDashboard = () => {
-    if (!user) return null;
-
-    switch (user.role) {
-      case 'student':
-        return <StudentDashboard />;
-      case 'professor':
-        return <ProfessorDashboard />;
-      case 'administrator':
-        return <AdminDashboard />;
-      case 'super_admin':
-        return <SuperAdminDashboard />;
-      default:
-        return <div>Unknown role</div>;
-    }
-  };
-
+const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -44,7 +24,7 @@ const DashboardLayout = () => {
             </div>
           </header>
           <div className="flex-1 p-6 bg-gray-50">
-            {renderDashboard()}
+            {children}
           </div>
         </main>
       </div>
