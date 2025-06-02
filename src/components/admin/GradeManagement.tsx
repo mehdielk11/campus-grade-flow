@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Download, Edit, Settings, GraduationCap, BookOpen } from 'lucide-react';
+import { Download, Edit, Settings, GraduationCap, BookOpen, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const GradeManagement = () => {
@@ -18,9 +18,11 @@ const GradeManagement = () => {
   const [selectedModule, setSelectedModule] = useState('all');
   const [editingGrade, setEditingGrade] = useState<any>(null);
   const [gradeWeights, setGradeWeights] = useState<{ [key: string]: { cc: number, exam: number } }>({});
+  const [showAddStudent, setShowAddStudent] = useState(false);
 
   const academicLevels = ['ISI1', 'ISI2', 'ISI3', 'ISI4', 'ISI5', 'MGE1', 'MGE2', 'MGE3', 'MGE4', 'MGE5'];
   const semesters = ['Semester 1', 'Semester 2'];
+  const departments = ['Computer Science', 'Management', 'Engineering'];
   const modules = [
     { id: 'math101', name: 'Mathematics I', level: 'ISI1' },
     { id: 'prog101', name: 'Programming I', level: 'ISI1' },
@@ -39,6 +41,7 @@ const GradeManagement = () => {
       lastName: 'Doe',
       level: 'ISI3',
       semester: 'Semester 1',
+      department: 'Computer Science',
       grades: {
         'algo301': { cc: 15, exam: 14, final: 14.3 },
         'db301': { cc: 16, exam: 15, final: 15.3 }
@@ -51,6 +54,7 @@ const GradeManagement = () => {
       lastName: 'Smith',
       level: 'ISI3',
       semester: 'Semester 1',
+      department: 'Computer Science',
       grades: {
         'algo301': { cc: 14, exam: 16, final: 15.4 },
         'db301': { cc: 17, exam: 14, final: 14.9 }
@@ -63,6 +67,7 @@ const GradeManagement = () => {
       lastName: 'Johnson',
       level: 'ISI3',
       semester: 'Semester 1',
+      department: 'Computer Science',
       grades: {
         'algo301': { cc: 18, exam: 17, final: 17.3 },
         'db301': { cc: 15, exam: 16, final: 15.7 }
@@ -150,6 +155,23 @@ const GradeManagement = () => {
     });
   };
 
+  const handleAddStudent = (studentData: any) => {
+    const newStudent = {
+      id: Date.now().toString(),
+      studentId: `STU-${new Date().getFullYear()}-${String(studentGrades.length + 1).padStart(3, '0')}`,
+      ...studentData,
+      grades: {}
+    };
+    
+    setStudentGrades(prev => [...prev, newStudent]);
+    setShowAddStudent(false);
+    
+    toast({
+      title: "Student added successfully",
+      description: `${studentData.firstName} ${studentData.lastName} has been enrolled.`
+    });
+  };
+
   const handleExportPDF = () => {
     toast({
       title: "Export initiated",
@@ -164,9 +186,92 @@ const GradeManagement = () => {
     return 'text-red-600 font-semibold';
   };
 
+  const AddStudentForm = () => {
+    const [formData, setFormData] = useState({
+      firstName: '',
+      lastName: '',
+      department: '',
+      level: '',
+      semester: ''
+    });
+
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label>First Name</Label>
+            <Input
+              value={formData.firstName}
+              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+            />
+          </div>
+          <div>
+            <Label>Last Name</Label>
+            <Input
+              value={formData.lastName}
+              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+            />
+          </div>
+        </div>
+        
+        <div>
+          <Label>Department</Label>
+          <Select value={formData.department} onValueChange={(value) => setFormData({ ...formData, department: value })}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select Department" />
+            </SelectTrigger>
+            <SelectContent>
+              {departments.map((dept) => (
+                <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label>Academic Level</Label>
+            <Select value={formData.level} onValueChange={(value) => setFormData({ ...formData, level: value })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select Level" />
+              </SelectTrigger>
+              <SelectContent>
+                {academicLevels.map((level) => (
+                  <SelectItem key={level} value={level}>{level}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div>
+            <Label>Semester</Label>
+            <Select value={formData.semester} onValueChange={(value) => setFormData({ ...formData, semester: value })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select Semester" />
+              </SelectTrigger>
+              <SelectContent>
+                {semesters.map((semester) => (
+                  <SelectItem key={semester} value={semester}>{semester}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <Button 
+          onClick={() => handleAddStudent(formData)} 
+          className="w-full"
+          disabled={!formData.firstName || !formData.lastName || !formData.department || !formData.level || !formData.semester}
+        >
+          Add Student
+        </Button>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <GraduationCap className="h-6 w-6" />
@@ -174,10 +279,26 @@ const GradeManagement = () => {
           </h2>
           <p className="text-gray-600 mt-1">Manage and monitor student grades across all levels and modules</p>
         </div>
-        <Button onClick={handleExportPDF} className="flex items-center gap-2">
-          <Download className="h-4 w-4" />
-          Export PDF
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Dialog open={showAddStudent} onOpenChange={setShowAddStudent}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Add Student
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add New Student</DialogTitle>
+              </DialogHeader>
+              <AddStudentForm />
+            </DialogContent>
+          </Dialog>
+          <Button onClick={handleExportPDF} className="flex items-center gap-2">
+            <Download className="h-4 w-4" />
+            Export PDF
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -185,7 +306,7 @@ const GradeManagement = () => {
           <CardTitle>Filters & Grade Weights</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-6">
             <div>
               <Label className="text-sm font-medium">Academic Level</Label>
               <Select value={selectedLevel} onValueChange={setSelectedLevel}>
@@ -239,11 +360,11 @@ const GradeManagement = () => {
                     Grade Weights
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-2xl">
                   <DialogHeader>
                     <DialogTitle>Configure Grade Weights</DialogTitle>
                   </DialogHeader>
-                  <div className="space-y-4">
+                  <div className="space-y-4 max-h-96 overflow-y-auto">
                     {filteredModules.map((module) => (
                       <div key={module.id} className="border rounded p-4 space-y-3">
                         <h4 className="font-medium">{module.name}</h4>
@@ -288,81 +409,83 @@ const GradeManagement = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BookOpen className="h-5 w-5" />
-            Student Grades
+            Student Grades ({filteredStudents.length} students)
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Student ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Level</TableHead>
-                  <TableHead>Semester</TableHead>
-                  {filteredModules.map((module) => (
-                    <React.Fragment key={module.id}>
-                      <TableHead className="text-center" colSpan={3}>
-                        {module.name}
-                        <div className="text-xs text-gray-500 font-normal">
-                          CC ({gradeWeights[module.id]?.cc || 30}%) | Exam ({gradeWeights[module.id]?.exam || 70}%) | Final
+          <div className="overflow-auto">
+            <div className="min-w-max">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="sticky left-0 bg-white z-10 border-r">Student ID</TableHead>
+                    <TableHead className="sticky left-20 bg-white z-10 border-r">Name</TableHead>
+                    <TableHead>Level</TableHead>
+                    <TableHead>Semester</TableHead>
+                    {filteredModules.map((module) => (
+                      <TableHead key={module.id} className="text-center min-w-48" colSpan={3}>
+                        <div className="font-medium">{module.name}</div>
+                        <div className="text-xs text-gray-500 font-normal flex justify-between">
+                          <span>CC ({gradeWeights[module.id]?.cc || 30}%)</span>
+                          <span>Exam ({gradeWeights[module.id]?.exam || 70}%)</span>
+                          <span>Final</span>
                         </div>
                       </TableHead>
-                    </React.Fragment>
-                  ))}
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredStudents.map((student) => (
-                  <TableRow key={student.id}>
-                    <TableCell className="font-medium">{student.studentId}</TableCell>
-                    <TableCell>{student.firstName} {student.lastName}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{student.level}</Badge>
-                    </TableCell>
-                    <TableCell>{student.semester}</TableCell>
-                    {filteredModules.map((module) => {
-                      const grade = student.grades[module.id] || { cc: 0, exam: 0, final: 0 };
-                      return (
-                        <React.Fragment key={module.id}>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              min="0"
-                              max="20"
-                              step="0.1"
-                              value={grade.cc}
-                              onChange={(e) => handleGradeUpdate(student.id, module.id, 'cc', parseFloat(e.target.value) || 0)}
-                              className="w-16 text-center"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              min="0"
-                              max="20"
-                              step="0.1"
-                              value={grade.exam}
-                              onChange={(e) => handleGradeUpdate(student.id, module.id, 'exam', parseFloat(e.target.value) || 0)}
-                              className="w-16 text-center"
-                            />
-                          </TableCell>
-                          <TableCell className={`text-center font-medium ${getGradeColor(grade.final)}`}>
-                            {grade.final.toFixed(1)}
-                          </TableCell>
-                        </React.Fragment>
-                      );
-                    })}
-                    <TableCell>
-                      <Button variant="ghost" size="sm">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
+                    ))}
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredStudents.map((student) => (
+                    <TableRow key={student.id}>
+                      <TableCell className="font-medium sticky left-0 bg-white z-10 border-r">{student.studentId}</TableCell>
+                      <TableCell className="sticky left-20 bg-white z-10 border-r">{student.firstName} {student.lastName}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{student.level}</Badge>
+                      </TableCell>
+                      <TableCell>{student.semester}</TableCell>
+                      {filteredModules.map((module) => {
+                        const grade = student.grades[module.id] || { cc: 0, exam: 0, final: 0 };
+                        return (
+                          <React.Fragment key={module.id}>
+                            <TableCell className="px-1">
+                              <Input
+                                type="number"
+                                min="0"
+                                max="20"
+                                step="0.1"
+                                value={grade.cc}
+                                onChange={(e) => handleGradeUpdate(student.id, module.id, 'cc', parseFloat(e.target.value) || 0)}
+                                className="w-16 text-center text-xs"
+                              />
+                            </TableCell>
+                            <TableCell className="px-1">
+                              <Input
+                                type="number"
+                                min="0"
+                                max="20"
+                                step="0.1"
+                                value={grade.exam}
+                                onChange={(e) => handleGradeUpdate(student.id, module.id, 'exam', parseFloat(e.target.value) || 0)}
+                                className="w-16 text-center text-xs"
+                              />
+                            </TableCell>
+                            <TableCell className={`text-center font-medium px-1 ${getGradeColor(grade.final)}`}>
+                              <span className="text-xs">{grade.final.toFixed(1)}</span>
+                            </TableCell>
+                          </React.Fragment>
+                        );
+                      })}
+                      <TableCell>
+                        <Button variant="ghost" size="sm">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </CardContent>
       </Card>
