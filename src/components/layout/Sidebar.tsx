@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   LayoutDashboard,
@@ -40,7 +41,7 @@ const Sidebar = ({ isCollapsed }: SidebarProps) => {
   const navigationItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Reports', href: '/reports', icon: BarChart },
-    ...(user?.role === 'admin' || user?.role === 'super-admin' ? [
+    ...(user?.role === 'administrator' || user?.role === 'super_admin' ? [
       { name: 'Filières', href: '/departments', icon: Building },
       { name: 'Modules', href: '/modules', icon: BookOpen },
       { name: 'Module Assignment', href: '/module-assignment', icon: Link },
@@ -56,7 +57,7 @@ const Sidebar = ({ isCollapsed }: SidebarProps) => {
       { name: 'Transcripts', href: '/transcripts', icon: FileText },
       { name: 'Profile', href: '/profile', icon: User },
     ] : []),
-    ...(user?.role === 'super-admin' ? [
+    ...(user?.role === 'super_admin' ? [
       { name: 'User Management', href: '/users', icon: UserCog },
       { name: 'System Backup', href: '/backup', icon: Database },
     ] : []),
