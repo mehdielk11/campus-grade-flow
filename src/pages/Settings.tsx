@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Settings as SettingsIcon, User, Shield, Bell, Palette, Key, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import UserPasswordManagement from '@/components/admin/UserPasswordManagement';
+import UserManagement from '@/components/superadmin/UserManagement';
 
 const Settings = () => {
   const { user, updateUser } = useAuth();
@@ -95,6 +95,10 @@ const Settings = () => {
     }
   };
 
+  const tabsList = user?.role === 'super_admin' 
+    ? ['profile', 'security', 'users', 'notifications']
+    : ['profile', 'security', 'notifications'];
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -107,10 +111,10 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4">
+          <TabsList className={`grid w-full ${user?.role === 'super_admin' ? 'grid-cols-4' : 'grid-cols-3'}`}>
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
-            {(user?.role === 'super_admin') && (
+            {user?.role === 'super_admin' && (
               <TabsTrigger value="users">User Management</TabsTrigger>
             )}
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
@@ -222,7 +226,7 @@ const Settings = () => {
 
           {user?.role === 'super_admin' && (
             <TabsContent value="users" className="space-y-6">
-              <UserPasswordManagement />
+              <UserManagement />
             </TabsContent>
           )}
 
