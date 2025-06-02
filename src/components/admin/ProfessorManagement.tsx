@@ -7,8 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Search, Eye, EyeOff, Key, UserCheck } from 'lucide-react';
+import { Plus, Edit, Trash2, UserCheck, Search, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -17,8 +18,10 @@ interface Professor {
   firstName: string;
   lastName: string;
   email: string;
+  employeeId: string;
   department: string;
-  status: 'Active' | 'Inactive';
+  specialization: string;
+  status: 'Active' | 'Inactive' | 'On Leave';
   hireDate: string;
   password?: string;
 }
@@ -30,72 +33,51 @@ const ProfessorManagement = () => {
     {
       id: '1',
       firstName: 'Dr. Jane',
-      lastName: 'Professor',
-      email: 'jane.prof@university.edu',
+      lastName: 'Smith',
+      email: 'jane.smith@university.edu',
+      employeeId: 'PROF001',
       department: 'Computer Science',
+      specialization: 'Machine Learning',
       status: 'Active',
-      hireDate: '2024-01-13',
-      password: 'prof789'
+      hireDate: '2020-08-15',
+      password: 'prof123'
     },
     {
       id: '2',
       firstName: 'Dr. John',
-      lastName: 'Smith',
-      email: 'john.smith@university.edu',
+      lastName: 'Doe',
+      email: 'john.doe@university.edu',
+      employeeId: 'PROF002',
       department: 'Mathematics',
+      specialization: 'Applied Mathematics',
       status: 'Active',
-      hireDate: '2024-01-10',
+      hireDate: '2019-01-10',
       password: 'prof456'
     }
   ]);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [selectedProfessor, setSelectedProfessor] = useState<Professor | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [newPassword, setNewPassword] = useState('');
+  const [filter, setFilter] = useState({ department: 'all', status: 'all' });
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
 
-  const filteredProfessors = professors.filter(professor => 
-    !searchTerm || 
-    professor.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    professor.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    professor.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    professor.department.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const departments = ['Computer Science', 'Mathematics', 'Physics', 'Engineering'];
+  const statuses = ['Active', 'Inactive', 'On Leave'];
 
-  const handlePasswordReset = () => {
-    if (!selectedProfessor || !newPassword) return;
-
-    if (newPassword.length < 3) {
-      toast({
-        title: "Password too short",
-        description: "Password must be at least 3 characters long.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setProfessors(prev => prev.map(professor => 
-      professor.id === selectedProfessor.id ? { ...professor, password: newPassword } : professor
-    ));
-
-    toast({
-      title: "Password reset successful",
-      description: `Password has been reset for ${selectedProfessor.firstName} ${selectedProfessor.lastName}.`
-    });
-    setIsPasswordDialogOpen(false);
-    setNewPassword('');
-    setSelectedProfessor(null);
-  };
-
-  const openPasswordDialog = (professor: Professor) => {
-    setSelectedProfessor(professor);
-    setNewPassword('');
-    setShowNewPassword(false);
-    setIsPasswordDialogOpen(true);
-  };
+  const filteredProfessors = professors.filter(professor => {
+    const matchesSearch = !searchTerm || 
+      professor.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      professor.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      professor.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      professor.employeeId.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesDepartment = filter.department === 'all' || professor.department === filter.department;
+    const matchesStatus = filter.status === 'all' || professor.status === filter.status;
+    
+    return matchesSearch && matchesDepartment && matchesStatus;
+  });
 
   const handleSave = (professorData: Partial<Professor>) => {
     if (selectedProfessor) {
@@ -106,8 +88,7 @@ const ProfessorManagement = () => {
     } else {
       const newProfessor = { 
         id: Date.now().toString(), 
-        hireDate: new Date().toISOString().split('T')[0],
-        password: 'defaultPass123',
+        password: professorData.password || 'default123',
         ...professorData 
       } as Professor;
       setProfessors([...professors, newProfessor]);
@@ -117,13 +98,19 @@ const ProfessorManagement = () => {
     setSelectedProfessor(null);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (id: string, professorName: string) => {
     setProfessors(professors.filter(p => p.id !== id));
-    toast({ title: "Professor deleted successfully" });
+    toast({ title: `Professor "${professorName}" deleted successfully` });
   };
 
+  const canManagePasswords = currentUser?.role === 'super_admin' || currentUser?.role === 'administrator';
+
   const ProfessorForm = () => {
-    const [formData, setFormData] = useState<Partial<Professor>>(selectedProfessor || { status: 'Active' });
+    const [formData, setFormData] = useState<Partial<Professor>>(selectedProfessor || { 
+      department: departments[0], 
+      status: 'Active',
+      password: ''
+    });
 
     return (
       <div className="space-y-4">
@@ -145,46 +132,134 @@ const ProfessorManagement = () => {
             />
           </div>
         </div>
+        
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="employeeId">Employee ID</Label>
+            <Input
+              id="employeeId"
+              value={formData.employeeId || ''}
+              onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
+            />
+          </div>
+          <div>
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email || ''}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="department">Department</Label>
+            <Select
+              value={formData.department || departments[0]}
+              onValueChange={(value) => setFormData({ ...formData, department: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select department" />
+              </SelectTrigger>
+              <SelectContent>
+                {departments.map((dept) => (
+                  <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="status">Status</Label>
+            <Select
+              value={formData.status || 'Active'}
+              onValueChange={(value) => setFormData({ ...formData, status: value as Professor['status'] })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                {statuses.map((status) => (
+                  <SelectItem key={status} value={status}>{status}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         <div>
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="specialization">Specialization</Label>
           <Input
-            id="email"
-            type="email"
-            value={formData.email || ''}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            id="specialization"
+            value={formData.specialization || ''}
+            onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
           />
         </div>
+
         <div>
-          <Label htmlFor="department">Department</Label>
+          <Label htmlFor="hireDate">Hire Date</Label>
           <Input
-            id="department"
-            value={formData.department || ''}
-            onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+            id="hireDate"
+            type="date"
+            value={formData.hireDate || ''}
+            onChange={(e) => setFormData({ ...formData, hireDate: e.target.value })}
           />
         </div>
-        <div>
-          <Label htmlFor="status">Status</Label>
-          <Select
-            value={formData.status || 'Active'}
-            onValueChange={(value) => setFormData({ ...formData, status: value as 'Active' | 'Inactive' })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Active">Active</SelectItem>
-              <SelectItem value="Inactive">Inactive</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+
+        {canManagePasswords && (
+          <>
+            {selectedProfessor && (
+              <div>
+                <Label>Current Password</Label>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    type={showCurrentPassword ? "text" : "password"}
+                    value={selectedProfessor.password || ''}
+                    readOnly
+                    className="bg-gray-50"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  >
+                    {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <Label htmlFor="password">{selectedProfessor ? 'New Password (optional)' : 'Password'}</Label>
+              <div className="flex items-center space-x-2">
+                <Input
+                  id="password"
+                  type={showNewPassword ? "text" : "password"}
+                  value={formData.password || ''}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder={selectedProfessor ? "Leave blank to keep current password" : "Enter password"}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                >
+                  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+
         <Button onClick={() => handleSave(formData)} className="w-full">
           {selectedProfessor ? 'Update Professor' : 'Create Professor'}
         </Button>
       </div>
     );
   };
-
-  const isAdmin = currentUser?.role === 'administrator' || currentUser?.role === 'super_admin';
 
   return (
     <div className="space-y-6">
@@ -202,7 +277,7 @@ const ProfessorManagement = () => {
                   Add Professor
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>
                     {selectedProfessor ? 'Edit Professor' : 'Add New Professor'}
@@ -214,7 +289,7 @@ const ProfessorManagement = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4 mb-4">
+          <div className="flex flex-col sm:flex-row gap-4 mb-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
@@ -224,133 +299,109 @@ const ProfessorManagement = () => {
                 className="pl-10"
               />
             </div>
+            
+            <Select
+              value={filter.department}
+              onValueChange={(value) => setFilter({ ...filter, department: value })}
+            >
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="Filter by Department" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Departments</SelectItem>
+                {departments.map((dept) => (
+                  <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Select
+              value={filter.status}
+              onValueChange={(value) => setFilter({ ...filter, status: value })}
+            >
+              <SelectTrigger className="w-full sm:w-32">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                {statuses.map((status) => (
+                  <SelectItem key={status} value={status}>{status}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Hire Date</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredProfessors.map((professor) => (
-                <TableRow key={professor.id}>
-                  <TableCell className="font-medium">
-                    {professor.firstName} {professor.lastName}
-                  </TableCell>
-                  <TableCell>{professor.email}</TableCell>
-                  <TableCell>{professor.department}</TableCell>
-                  <TableCell>
-                    <Badge variant={professor.status === 'Active' ? 'default' : 'secondary'}>
-                      {professor.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{professor.hireDate}</TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedProfessor(professor);
-                          setIsDialogOpen(true);
-                        }}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      {isAdmin && (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Employee ID</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Department</TableHead>
+                  <TableHead>Specialization</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredProfessors.map((professor) => (
+                  <TableRow key={professor.id}>
+                    <TableCell className="font-medium">{professor.employeeId}</TableCell>
+                    <TableCell>{professor.firstName} {professor.lastName}</TableCell>
+                    <TableCell>{professor.email}</TableCell>
+                    <TableCell>{professor.department}</TableCell>
+                    <TableCell>{professor.specialization}</TableCell>
+                    <TableCell>
+                      <Badge variant={professor.status === 'Active' ? 'default' : 'secondary'}>
+                        {professor.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => openPasswordDialog(professor)}
+                          onClick={() => {
+                            setSelectedProfessor(professor);
+                            setIsDialogOpen(true);
+                          }}
                         >
-                          <Key className="h-4 w-4" />
+                          <Edit className="h-4 w-4" />
                         </Button>
-                      )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete(professor.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the professor "{professor.firstName} {professor.lastName}" (ID: {professor.employeeId}) and remove all associated data.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDelete(professor.id, `${professor.firstName} ${professor.lastName}`)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Delete Professor
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
-
-      {/* Password Reset Dialog */}
-      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Manage Password</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <p className="text-sm text-gray-600 mb-4">
-                Manage password for: <strong>{selectedProfessor?.firstName} {selectedProfessor?.lastName}</strong>
-              </p>
-              
-              {/* Current Password Display */}
-              <div className="mb-4">
-                <Label>Current Password</Label>
-                <div className="flex items-center space-x-2">
-                  <Input
-                    type={showCurrentPassword ? "text" : "password"}
-                    value={selectedProfessor?.password || ''}
-                    readOnly
-                    className="bg-gray-50"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                  >
-                    {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </div>
-
-              <Label htmlFor="newPassword">New Password</Label>
-              <div className="flex items-center space-x-2">
-                <Input
-                  id="newPassword"
-                  type={showNewPassword ? "text" : "password"}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Enter new password"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowNewPassword(!showNewPassword)}
-                >
-                  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
-              </div>
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handlePasswordReset} disabled={!newPassword}>
-                Update Password
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

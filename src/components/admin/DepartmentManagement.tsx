@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Plus, Edit, Trash2, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -119,11 +120,11 @@ const DepartmentManagement = () => {
     });
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (id: string, departmentName: string) => {
     setDepartments(departments.filter(dept => dept.id !== id));
     toast({
       title: "Department Deleted",
-      description: "Department has been successfully removed.",
+      description: `Department "${departmentName}" has been successfully removed.`,
     });
   };
 
@@ -265,15 +266,35 @@ const DepartmentManagement = () => {
                   <Edit className="h-3 w-3" />
                   Edit
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDelete(department.id)}
-                  className="flex items-center gap-1 text-red-600 hover:text-red-700"
-                >
-                  <Trash2 className="h-3 w-3" />
-                  Delete
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-1 text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      Delete
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the department "{department.name}" ({department.code}) and remove all associated data.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => handleDelete(department.id, department.name)}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        Delete Department
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </CardContent>
           </Card>
