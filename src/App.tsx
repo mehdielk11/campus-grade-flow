@@ -12,7 +12,6 @@ import Modules from "./pages/Modules";
 import Students from "./pages/Students";
 import Professors from "./pages/Professors";
 import Reports from "./pages/Reports";
-import Users from "./pages/Users";
 import Backup from "./pages/Backup";
 import Settings from "./pages/Settings";
 import GradeEntry from "./pages/GradeEntry";
@@ -39,7 +38,6 @@ const App = () => (
             <Route path="/students" element={<Students />} />
             <Route path="/professors" element={<Professors />} />
             <Route path="/reports" element={<Reports />} />
-            <Route path="/users" element={<Users />} />
             <Route path="/backup" element={<Backup />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/grade-entry" element={<GradeEntry />} />

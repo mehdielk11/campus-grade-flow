@@ -3,287 +3,354 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Users, Filter, Plus, Eye, Edit } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Eye, EyeOff, Key, UserCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import ProfessorDetailsDialog from './ProfessorDetailsDialog';
-import ProfessorEditDialog from './ProfessorEditDialog';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Professor {
   id: string;
   firstName: string;
   lastName: string;
   email: string;
-  professorId: string;
   department: string;
-  specialization: string;
-  status: string;
-  joinDate: string;
+  status: 'Active' | 'Inactive';
+  hireDate: string;
+  password?: string;
 }
 
 const ProfessorManagement = () => {
   const { toast } = useToast();
+  const { user: currentUser } = useAuth();
   const [professors, setProfessors] = useState<Professor[]>([
     {
       id: '1',
-      firstName: 'Dr. John',
-      lastName: 'Smith',
-      email: 'john.smith@supmti.ma',
-      professorId: 'PROF001',
-      department: 'Informatics',
-      specialization: 'Computer Science',
-      status: 'active',
-      joinDate: '2020-09-01'
+      firstName: 'Dr. Jane',
+      lastName: 'Professor',
+      email: 'jane.prof@university.edu',
+      department: 'Computer Science',
+      status: 'Active',
+      hireDate: '2024-01-13',
+      password: 'prof789'
     },
     {
       id: '2',
-      firstName: 'Dr. Sarah',
-      lastName: 'Johnson',
-      email: 'sarah.johnson@supmti.ma',
-      professorId: 'PROF002',
-      department: 'Management',
-      specialization: 'Business Administration',
-      status: 'active',
-      joinDate: '2019-01-15'
-    },
-    {
-      id: '3',
-      firstName: 'Dr. Michael',
-      lastName: 'Brown',
-      email: 'michael.brown@supmti.ma',
-      professorId: 'PROF003',
-      department: 'Engineering',
-      specialization: 'Software Engineering',
-      status: 'on-leave',
-      joinDate: '2018-08-20'
+      firstName: 'Dr. John',
+      lastName: 'Smith',
+      email: 'john.smith@university.edu',
+      department: 'Mathematics',
+      status: 'Active',
+      hireDate: '2024-01-10',
+      password: 'prof456'
     }
   ]);
 
-  const [filters, setFilters] = useState({
-    search: '',
-    department: 'All Departments',
-    status: 'All Statuses'
-  });
-
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [selectedProfessor, setSelectedProfessor] = useState<Professor | null>(null);
-  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
-  const departments = ['All Departments', 'Informatics', 'Management', 'Engineering', 'Business'];
-  const statuses = ['All Statuses', 'active', 'inactive', 'retired', 'on-leave'];
+  const filteredProfessors = professors.filter(professor => 
+    !searchTerm || 
+    professor.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    professor.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    professor.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    professor.department.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  const filteredProfessors = professors.filter(professor => {
-    const matchesSearch = !filters.search || 
-      professor.firstName.toLowerCase().includes(filters.search.toLowerCase()) ||
-      professor.lastName.toLowerCase().includes(filters.search.toLowerCase()) ||
-      professor.email.toLowerCase().includes(filters.search.toLowerCase()) ||
-      professor.professorId.toLowerCase().includes(filters.search.toLowerCase());
-    
-    const matchesDepartment = filters.department === 'All Departments' || professor.department === filters.department;
-    const matchesStatus = filters.status === 'All Statuses' || professor.status === filters.status;
-    
-    return matchesSearch && matchesDepartment && matchesStatus;
-  });
+  const handlePasswordReset = () => {
+    if (!selectedProfessor || !newPassword) return;
 
-  const clearFilters = () => {
-    setFilters({
-      search: '',
-      department: 'All Departments',
-      status: 'All Statuses'
-    });
-  };
-
-  const handleViewDetails = (professor: Professor) => {
-    setSelectedProfessor(professor);
-    setIsDetailsDialogOpen(true);
-  };
-
-  const handleEdit = (professor: Professor) => {
-    setSelectedProfessor(professor);
-    setIsEditDialogOpen(true);
-  };
-
-  const handleSaveProfessor = (updatedProfessor: Professor) => {
-    setProfessors(prev => prev.map(p => p.id === updatedProfessor.id ? updatedProfessor : p));
-  };
-
-  const getStatusBadgeColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'default';
-      case 'retired': return 'secondary';
-      case 'inactive': return 'outline';
-      case 'on-leave': return 'destructive';
-      default: return 'outline';
+    if (newPassword.length < 3) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 3 characters long.",
+        variant: "destructive"
+      });
+      return;
     }
+
+    setProfessors(prev => prev.map(professor => 
+      professor.id === selectedProfessor.id ? { ...professor, password: newPassword } : professor
+    ));
+
+    toast({
+      title: "Password reset successful",
+      description: `Password has been reset for ${selectedProfessor.firstName} ${selectedProfessor.lastName}.`
+    });
+    setIsPasswordDialogOpen(false);
+    setNewPassword('');
+    setSelectedProfessor(null);
   };
+
+  const openPasswordDialog = (professor: Professor) => {
+    setSelectedProfessor(professor);
+    setNewPassword('');
+    setShowNewPassword(false);
+    setIsPasswordDialogOpen(true);
+  };
+
+  const handleSave = (professorData: Partial<Professor>) => {
+    if (selectedProfessor) {
+      setProfessors(professors.map(p => 
+        p.id === selectedProfessor.id ? { ...p, ...professorData } : p
+      ));
+      toast({ title: "Professor updated successfully" });
+    } else {
+      const newProfessor = { 
+        id: Date.now().toString(), 
+        hireDate: new Date().toISOString().split('T')[0],
+        password: 'defaultPass123',
+        ...professorData 
+      } as Professor;
+      setProfessors([...professors, newProfessor]);
+      toast({ title: "Professor created successfully" });
+    }
+    setIsDialogOpen(false);
+    setSelectedProfessor(null);
+  };
+
+  const handleDelete = (id: string) => {
+    setProfessors(professors.filter(p => p.id !== id));
+    toast({ title: "Professor deleted successfully" });
+  };
+
+  const ProfessorForm = () => {
+    const [formData, setFormData] = useState<Partial<Professor>>(selectedProfessor || { status: 'Active' });
+
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="firstName">First Name</Label>
+            <Input
+              id="firstName"
+              value={formData.firstName || ''}
+              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+            />
+          </div>
+          <div>
+            <Label htmlFor="lastName">Last Name</Label>
+            <Input
+              id="lastName"
+              value={formData.lastName || ''}
+              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+            />
+          </div>
+        </div>
+        <div>
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            value={formData.email || ''}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label htmlFor="department">Department</Label>
+          <Input
+            id="department"
+            value={formData.department || ''}
+            onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label htmlFor="status">Status</Label>
+          <Select
+            value={formData.status || 'Active'}
+            onValueChange={(value) => setFormData({ ...formData, status: value as 'Active' | 'Inactive' })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Active">Active</SelectItem>
+              <SelectItem value="Inactive">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <Button onClick={() => handleSave(formData)} className="w-full">
+          {selectedProfessor ? 'Update Professor' : 'Create Professor'}
+        </Button>
+      </div>
+    );
+  };
+
+  const isAdmin = currentUser?.role === 'administrator' || currentUser?.role === 'super_admin';
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Professor Management</h1>
-          <p className="text-gray-600">Manage professor records and academic information</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-lg px-3 py-1">
-            <Users className="h-4 w-4 mr-1" />
-            {filteredProfessors.length} Professors
-          </Badge>
-        </div>
-      </div>
-
-      {/* Filters Section */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filters
-          </CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle className="flex items-center gap-2">
+              <UserCheck className="h-5 w-5" />
+              Professor Management
+            </CardTitle>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={() => setSelectedProfessor(null)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Professor
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>
+                    {selectedProfessor ? 'Edit Professor' : 'Add New Professor'}
+                  </DialogTitle>
+                </DialogHeader>
+                <ProfessorForm />
+              </DialogContent>
+            </Dialog>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Search</label>
+          <div className="flex gap-4 mb-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
                 placeholder="Search professors..."
-                value={filters.search}
-                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
               />
             </div>
-            
-            <div>
-              <label className="text-sm font-medium mb-2 block">Department</label>
-              <Select value={filters.department} onValueChange={(value) => setFilters({ ...filters, department: value })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {departments.map(dept => (
-                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Status</label>
-              <Select value={filters.status} onValueChange={(value) => setFilters({ ...filters, status: value })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {statuses.map(status => (
-                    <SelectItem key={status} value={status}>{status}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-end">
-              <Button variant="outline" onClick={clearFilters} className="w-full">
-                Clear Filters
-              </Button>
-            </div>
           </div>
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Department</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Hire Date</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredProfessors.map((professor) => (
+                <TableRow key={professor.id}>
+                  <TableCell className="font-medium">
+                    {professor.firstName} {professor.lastName}
+                  </TableCell>
+                  <TableCell>{professor.email}</TableCell>
+                  <TableCell>{professor.department}</TableCell>
+                  <TableCell>
+                    <Badge variant={professor.status === 'Active' ? 'default' : 'secondary'}>
+                      {professor.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{professor.hireDate}</TableCell>
+                  <TableCell>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedProfessor(professor);
+                          setIsDialogOpen(true);
+                        }}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      {isAdmin && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openPasswordDialog(professor)}
+                        >
+                          <Key className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDelete(professor.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 
-      {/* Professors Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredProfessors.map((professor) => (
-          <Card key={professor.id} className="hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="bg-green-100 p-2 rounded-full">
-                    <Users className="h-6 w-6 text-green-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg text-gray-900">
-                      {professor.firstName} {professor.lastName}
-                    </h3>
-                    <p className="text-green-600 font-medium">{professor.professorId}</p>
-                  </div>
-                </div>
-                <Badge variant={getStatusBadgeColor(professor.status)}>
-                  {professor.status}
-                </Badge>
-              </div>
-
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Email:</span>
-                  <span className="font-medium">{professor.email}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Department:</span>
-                  <span className="font-medium">{professor.department}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Specialization:</span>
-                  <span className="font-medium">{professor.specialization}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Join Date:</span>
-                  <span className="font-medium">{professor.joinDate}</span>
+      {/* Password Reset Dialog */}
+      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Manage Password</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-gray-600 mb-4">
+                Manage password for: <strong>{selectedProfessor?.firstName} {selectedProfessor?.lastName}</strong>
+              </p>
+              
+              {/* Current Password Display */}
+              <div className="mb-4">
+                <Label>Current Password</Label>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    type={showCurrentPassword ? "text" : "password"}
+                    value={selectedProfessor?.password || ''}
+                    readOnly
+                    className="bg-gray-50"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  >
+                    {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
                 </div>
               </div>
 
-              <div className="flex gap-2 mt-4">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => handleViewDetails(professor)}
-                  className="flex-1"
+              <Label htmlFor="newPassword">New Password</Label>
+              <div className="flex items-center space-x-2">
+                <Input
+                  id="newPassword"
+                  type={showNewPassword ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
                 >
-                  <Eye className="h-4 w-4 mr-1" />
-                  View Details
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => handleEdit(professor)}
-                  className="flex-1"
-                >
-                  <Edit className="h-4 w-4 mr-1" />
-                  Edit
+                  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {filteredProfessors.length === 0 && (
-        <Card>
-          <CardContent className="text-center py-12">
-            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No professors found</h3>
-            <p className="text-gray-600">Try adjusting your filters or search criteria.</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Dialogs */}
-      <ProfessorDetailsDialog
-        professor={selectedProfessor}
-        isOpen={isDetailsDialogOpen}
-        onClose={() => {
-          setIsDetailsDialogOpen(false);
-          setSelectedProfessor(null);
-        }}
-      />
-
-      <ProfessorEditDialog
-        professor={selectedProfessor}
-        isOpen={isEditDialogOpen}
-        onClose={() => {
-          setIsEditDialogOpen(false);
-          setSelectedProfessor(null);
-        }}
-        onSave={handleSaveProfessor}
-      />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handlePasswordReset} disabled={!newPassword}>
+                Update Password
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

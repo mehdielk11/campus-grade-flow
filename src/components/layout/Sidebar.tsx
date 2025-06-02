@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -103,12 +102,6 @@ const sidebarItems: SidebarItem[] = [
     icon: UserCheck,
     href: '/professors',
     roles: ['administrator', 'super_admin']
-  },
-  {
-    title: 'User Management',
-    icon: Users,
-    href: '/users',
-    roles: ['super_admin']
   },
   {
     title: 'System Backup',
