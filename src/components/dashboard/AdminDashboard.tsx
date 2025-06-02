@@ -6,6 +6,7 @@ import ModuleManagement from '@/components/admin/ModuleManagement';
 import ProfessorManagement from '@/components/admin/ProfessorManagement';
 import StudentManagement from '@/components/admin/StudentManagement';
 import AdminReports from '@/components/admin/AdminReports';
+import GradeManagement from '@/components/admin/GradeManagement';
 
 const AdminDashboard = () => {
   return (
@@ -16,11 +17,12 @@ const AdminDashboard = () => {
       </div>
 
       <Tabs defaultValue="departments" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="departments">Departments</TabsTrigger>
           <TabsTrigger value="modules">Modules</TabsTrigger>
           <TabsTrigger value="professors">Professors</TabsTrigger>
           <TabsTrigger value="students">Students</TabsTrigger>
+          <TabsTrigger value="grades">Grades</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
         </TabsList>
 
@@ -38,6 +40,10 @@ const AdminDashboard = () => {
 
         <TabsContent value="students" className="space-y-6">
           <StudentManagement />
+        </TabsContent>
+
+        <TabsContent value="grades" className="space-y-6">
+          <GradeManagement />
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-6">

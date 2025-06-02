@@ -7,6 +7,7 @@ import UserManagement from '@/components/superadmin/UserManagement';
 import SystemBackup from '@/components/superadmin/SystemBackup';
 import DepartmentManagement from '@/components/admin/DepartmentManagement';
 import AdminReports from '@/components/admin/AdminReports';
+import GradeManagement from '@/components/admin/GradeManagement';
 
 const SuperAdminDashboard = () => {
   const systemStats = [
@@ -40,9 +41,10 @@ const SuperAdminDashboard = () => {
       </div>
 
       <Tabs defaultValue="users" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="departments">Departments</TabsTrigger>
+          <TabsTrigger value="grades">Grades</TabsTrigger>
           <TabsTrigger value="backup">Backup</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
           <TabsTrigger value="audit">Audit Logs</TabsTrigger>
@@ -55,6 +57,10 @@ const SuperAdminDashboard = () => {
 
         <TabsContent value="departments" className="space-y-6">
           <DepartmentManagement />
+        </TabsContent>
+
+        <TabsContent value="grades" className="space-y-6">
+          <GradeManagement />
         </TabsContent>
 
         <TabsContent value="backup" className="space-y-6">

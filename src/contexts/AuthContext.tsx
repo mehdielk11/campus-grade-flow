@@ -58,7 +58,7 @@ const mockUsers: User[] = [
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
-    isLoading: false,
+    isLoading: true,
     isAuthenticated: false
   });
 
@@ -66,12 +66,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Check for existing session
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      const user = JSON.parse(storedUser);
-      setAuthState({
-        user,
-        isLoading: false,
-        isAuthenticated: true
-      });
+      try {
+        const user = JSON.parse(storedUser);
+        setAuthState({
+          user,
+          isLoading: false,
+          isAuthenticated: true
+        });
+      } catch (error) {
+        localStorage.removeItem('user');
+        setAuthState({
+          user: null,
+          isLoading: false,
+          isAuthenticated: false
+        });
+      }
+    } else {
+      setAuthState(prev => ({ ...prev, isLoading: false }));
     }
   }, []);
 
@@ -101,6 +112,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isLoading: false,
       isAuthenticated: false
     });
+    // Force a page reload to ensure clean state
+    window.location.href = '/';
   };
 
   const updateUser = (user: User) => {
