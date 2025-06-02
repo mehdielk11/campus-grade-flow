@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -144,7 +145,7 @@ const UserPasswordManagement = () => {
     if (!selectedUser) return;
 
     // Prevent super admin from downgrading their own privileges
-    if (selectedUser.id === currentUser?.id && editData.role !== 'super_admin') {
+    if (selectedUser.id === currentUser?.id && currentUser?.role === 'super_admin' && editData.role !== 'super_admin') {
       toast({
         title: "Action not allowed",
         description: "You cannot downgrade your own privileges.",
