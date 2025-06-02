@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Search, Edit, Key, Shield, AlertTriangle } from 'lucide-react';
+import { Search, Edit, Key, Shield, AlertTriangle, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -21,6 +20,7 @@ interface User {
   status: 'Active' | 'Inactive';
   lastLogin: string;
   studentId?: string;
+  password?: string;
 }
 
 interface EditUserData {
@@ -43,7 +43,8 @@ const UserPasswordManagement = () => {
       email: 'admin@university.edu',
       role: 'super_admin',
       status: 'Active',
-      lastLogin: '2024-01-15'
+      lastLogin: '2024-01-15',
+      password: 'admin123'
     },
     {
       id: '2',
@@ -52,7 +53,8 @@ const UserPasswordManagement = () => {
       email: 'john.admin@university.edu',
       role: 'administrator',
       status: 'Active',
-      lastLogin: '2024-01-14'
+      lastLogin: '2024-01-14',
+      password: 'admin456'
     },
     {
       id: '3',
@@ -61,7 +63,8 @@ const UserPasswordManagement = () => {
       email: 'jane.prof@university.edu',
       role: 'professor',
       status: 'Active',
-      lastLogin: '2024-01-13'
+      lastLogin: '2024-01-13',
+      password: 'prof789'
     },
     {
       id: '4',
@@ -71,7 +74,8 @@ const UserPasswordManagement = () => {
       role: 'student',
       status: 'Active',
       lastLogin: '2024-01-12',
-      studentId: 'STU001'
+      studentId: 'STU001',
+      password: 'STU001'
     }
   ]);
 
@@ -81,6 +85,8 @@ const UserPasswordManagement = () => {
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [newPassword, setNewPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [editData, setEditData] = useState<EditUserData>({ 
     firstName: '', 
     lastName: '', 
@@ -121,16 +127,17 @@ const UserPasswordManagement = () => {
       return;
     }
 
-    // Simulate API call
-    setTimeout(() => {
-      toast({
-        title: "Password reset successful",
-        description: `Password has been reset for ${selectedUser.firstName} ${selectedUser.lastName}.`
-      });
-      setIsPasswordDialogOpen(false);
-      setNewPassword('');
-      setSelectedUser(null);
-    }, 1000);
+    setUsers(prev => prev.map(user => 
+      user.id === selectedUser.id ? { ...user, password: newPassword } : user
+    ));
+
+    toast({
+      title: "Password reset successful",
+      description: `Password has been reset for ${selectedUser.firstName} ${selectedUser.lastName}.`
+    });
+    setIsPasswordDialogOpen(false);
+    setNewPassword('');
+    setSelectedUser(null);
   };
 
   const handleUserEdit = () => {
@@ -153,7 +160,8 @@ const UserPasswordManagement = () => {
         lastName: editData.lastName,
         email: editData.email,
         role: editData.role,
-        status: editData.status
+        status: editData.status,
+        ...(editData.password && { password: editData.password })
       } : user
     ));
 
@@ -169,6 +177,7 @@ const UserPasswordManagement = () => {
   const openPasswordDialog = (user: User) => {
     setSelectedUser(user);
     setNewPassword('');
+    setShowNewPassword(false);
     setIsPasswordDialogOpen(true);
   };
 
@@ -182,6 +191,8 @@ const UserPasswordManagement = () => {
       status: user.status,
       password: ''
     });
+    setShowCurrentPassword(false);
+    setShowNewPassword(false);
     setIsEditDialogOpen(true);
   };
 
@@ -194,6 +205,9 @@ const UserPasswordManagement = () => {
       default: return 'outline';
     }
   };
+
+  const isEditingSelf = selectedUser?.id === currentUser?.id;
+  const isSuperAdminEditingSelf = isEditingSelf && currentUser?.role === 'super_admin';
 
   return (
     <Card>
@@ -297,14 +311,46 @@ const UserPasswordManagement = () => {
                 <p className="text-sm text-gray-600 mb-4">
                   Reset password for: <strong>{selectedUser?.firstName} {selectedUser?.lastName}</strong>
                 </p>
+                
+                {/* Current Password Display */}
+                <div className="mb-4">
+                  <Label>Current Password</Label>
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      type={showCurrentPassword ? "text" : "password"}
+                      value={selectedUser?.password || ''}
+                      readOnly
+                      className="bg-gray-50"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    >
+                      {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+
                 <Label htmlFor="newPassword">New Password</Label>
-                <Input
-                  id="newPassword"
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Enter new password"
-                />
+                <div className="flex items-center space-x-2">
+                  <Input
+                    id="newPassword"
+                    type={showNewPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                  >
+                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
                 {selectedUser?.role === 'student' && (
                   <p className="text-xs text-gray-500 mt-1">
                     Default password for students is their Student ID: {selectedUser.studentId}
@@ -330,11 +376,11 @@ const UserPasswordManagement = () => {
               <DialogTitle>Edit User</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              {selectedUser?.id === currentUser?.id && editData.role !== 'super_admin' && (
-                <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded">
-                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                  <span className="text-sm text-yellow-800">
-                    You cannot downgrade your own privileges.
+              {isSuperAdminEditingSelf && (
+                <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded">
+                  <Shield className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm text-blue-800">
+                    You cannot modify your own role or status as Super Admin.
                   </span>
                 </div>
               )}
@@ -379,6 +425,7 @@ const UserPasswordManagement = () => {
                   <Select 
                     value={editData.role} 
                     onValueChange={(value) => setEditData({ ...editData, role: value as 'super_admin' | 'administrator' | 'professor' | 'student' })}
+                    disabled={isSuperAdminEditingSelf}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -397,6 +444,7 @@ const UserPasswordManagement = () => {
                   <Select 
                     value={editData.status} 
                     onValueChange={(value) => setEditData({ ...editData, status: value as 'Active' | 'Inactive' })}
+                    disabled={isSuperAdminEditingSelf}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -409,15 +457,46 @@ const UserPasswordManagement = () => {
                 </div>
               </div>
 
+              {/* Current Password Display */}
+              <div>
+                <Label>Current Password</Label>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    type={showCurrentPassword ? "text" : "password"}
+                    value={selectedUser?.password || ''}
+                    readOnly
+                    className="bg-gray-50"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  >
+                    {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+
               <div>
                 <Label htmlFor="editPassword">New Password (optional)</Label>
-                <Input
-                  id="editPassword"
-                  type="password"
-                  value={editData.password}
-                  onChange={(e) => setEditData({ ...editData, password: e.target.value })}
-                  placeholder="Leave blank to keep current password"
-                />
+                <div className="flex items-center space-x-2">
+                  <Input
+                    id="editPassword"
+                    type={showNewPassword ? "text" : "password"}
+                    value={editData.password}
+                    onChange={(e) => setEditData({ ...editData, password: e.target.value })}
+                    placeholder="Leave blank to keep current password"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                  >
+                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
               </div>
               
               <div className="flex justify-end space-x-2">
