@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -350,7 +351,7 @@ const UserPasswordManagement = () => {
                   <Label htmlFor="editRole">Role</Label>
                   <Select 
                     value={editData.role} 
-                    onValueChange={(value) => setEditData({ ...editData, role: value })}
+                    onValueChange={(value) => setEditData({ ...editData, role: value as 'super_admin' | 'administrator' | 'professor' | 'student' })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -368,7 +369,7 @@ const UserPasswordManagement = () => {
                   <Label htmlFor="editStatus">Status</Label>
                   <Select 
                     value={editData.status} 
-                    onValueChange={(value) => setEditData({ ...editData, status: value })}
+                    onValueChange={(value) => setEditData({ ...editData, status: value as 'Active' | 'Inactive' })}
                   >
                     <SelectTrigger>
                       <SelectValue />
