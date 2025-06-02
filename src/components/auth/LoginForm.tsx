@@ -29,7 +29,7 @@ const LoginForm = () => {
         description: "Welcome to the Grade Management Portal",
       });
     } catch (err) {
-      setError('Invalid email or password');
+      setError('Invalid email/student code or password');
       toast({
         title: "Login failed",
         description: "Please check your credentials and try again",
@@ -61,13 +61,13 @@ const LoginForm = () => {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="email">Email Address or Student Code</Label>
                 <Input
                   id="email"
-                  type="email"
+                  type="text"
                   value={credentials.email}
                   onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
-                  placeholder="Enter your email"
+                  placeholder="Enter your email or student code (e.g., STU001)"
                   required
                 />
               </div>
@@ -112,8 +112,9 @@ const LoginForm = () => {
                 <div><strong>Super Admin:</strong> admin@university.edu</div>
                 <div><strong>Administrator:</strong> admin.cs@university.edu</div>
                 <div><strong>Professor:</strong> prof.johnson@university.edu</div>
-                <div><strong>Student:</strong> student.doe@university.edu</div>
-                <div className="mt-2"><strong>Password:</strong> password123</div>
+                <div><strong>Student (Email):</strong> student.doe@university.edu</div>
+                <div><strong>Student (Code):</strong> STU001 or STU002</div>
+                <div className="mt-2"><strong>Password:</strong> password123 (or Student Code for students)</div>
               </div>
             </div>
           </CardContent>

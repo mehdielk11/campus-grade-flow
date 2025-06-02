@@ -52,6 +52,29 @@ const mockUsers: User[] = [
     departmentId: 'cs-dept',
     createdAt: '2024-01-01',
     updatedAt: '2024-01-01'
+  },
+  // Additional student users with new format
+  {
+    id: '5',
+    email: 'STU001@supmti.ma',
+    firstName: 'Alice',
+    lastName: 'Johnson',
+    role: 'student',
+    studentId: 'STU001',
+    departmentId: 'cs-dept',
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01'
+  },
+  {
+    id: '6',
+    email: 'STU002@supmti.ma',
+    firstName: 'Bob',
+    lastName: 'Smith',
+    role: 'student',
+    studentId: 'STU002',
+    departmentId: 'management-dept',
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01'
   }
 ];
 
@@ -89,10 +112,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (credentials: LoginCredentials) => {
     setAuthState(prev => ({ ...prev, isLoading: true }));
     
-    // Simulate API call
-    const user = mockUsers.find(u => u.email === credentials.email);
+    // First try normal email login
+    let user = mockUsers.find(u => u.email === credentials.email);
     
-    if (user && credentials.password === 'password123') {
+    // If not found, try student code login (email format: [StudentCode]@supmti.ma)
+    if (!user && !credentials.email.includes('@')) {
+      const studentEmail = `${credentials.email}@supmti.ma`;
+      user = mockUsers.find(u => u.email === studentEmail);
+    }
+    
+    // Check password
+    let validPassword = false;
+    if (user) {
+      if (user.role === 'student' && user.studentId) {
+        // For students, allow both their studentId and 'password123'
+        validPassword = credentials.password === user.studentId || credentials.password === 'password123';
+      } else {
+        // For other users, use 'password123'
+        validPassword = credentials.password === 'password123';
+      }
+    }
+    
+    if (user && validPassword) {
       localStorage.setItem('user', JSON.stringify(user));
       setAuthState({
         user,

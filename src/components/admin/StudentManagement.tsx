@@ -1,139 +1,151 @@
+
 import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Users, Search, Filter, UserCheck, GraduationCap } from 'lucide-react';
+import { Users, Filter, Plus, Eye, Edit } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import StudentDetailsDialog from './StudentDetailsDialog';
+import StudentEditDialog from './StudentEditDialog';
 
 interface Student {
   id: string;
-  studentId: string;
   firstName: string;
   lastName: string;
   email: string;
+  studentId: string;
   department: string;
-  academicLevel: string;
+  level: string;
   semester: string;
   gpa: number;
-  status: 'active' | 'inactive' | 'graduated';
+  status: string;
 }
 
-const mockStudents: Student[] = [
-  {
-    id: '1',
-    studentId: 'STU001',
-    firstName: 'Alice',
-    lastName: 'Johnson',
-    email: 'alice.johnson@university.edu',
-    department: 'Informatics',
-    academicLevel: 'ISI3',
-    semester: 'Semester 1',
-    gpa: 3.8,
-    status: 'active'
-  },
-  {
-    id: '2',
-    studentId: 'STU002',
-    firstName: 'Bob',
-    lastName: 'Smith',
-    email: 'bob.smith@university.edu',
-    department: 'Management',
-    academicLevel: 'MGE2',
-    semester: 'Semester 2',
-    gpa: 3.5,
-    status: 'active'
-  },
-  {
-    id: '3',
-    studentId: 'STU003',
-    firstName: 'Carol',
-    lastName: 'Davis',
-    email: 'carol.davis@university.edu',
-    department: 'Informatics',
-    academicLevel: 'ISI5',
-    semester: 'Semester 1',
-    gpa: 3.9,
-    status: 'graduated'
-  }
-];
-
 const StudentManagement = () => {
-  const [students] = useState<Student[]>(mockStudents);
-  const [filteredStudents, setFilteredStudents] = useState<Student[]>(mockStudents);
+  const { toast } = useToast();
+  const [students, setStudents] = useState<Student[]>([
+    {
+      id: '1',
+      firstName: 'Alice',
+      lastName: 'Johnson',
+      email: 'STU001@supmti.ma',
+      studentId: 'STU001',
+      department: 'Informatics',
+      level: 'ISI3',
+      semester: 'Semester 1',
+      gpa: 3.80,
+      status: 'active'
+    },
+    {
+      id: '2',
+      firstName: 'Bob',
+      lastName: 'Smith',
+      email: 'STU002@supmti.ma',
+      studentId: 'STU002',
+      department: 'Management',
+      level: 'MGE2',
+      semester: 'Semester 2',
+      gpa: 3.50,
+      status: 'active'
+    },
+    {
+      id: '3',
+      firstName: 'Carol',
+      lastName: 'Davis',
+      email: 'STU003@supmti.ma',
+      studentId: 'STU003',
+      department: 'Informatics',
+      level: 'ISI3',
+      semester: 'Semester 1',
+      gpa: 3.90,
+      status: 'graduated'
+    }
+  ]);
+
   const [filters, setFilters] = useState({
-    department: 'all',
-    academicLevel: 'all',
-    semester: 'all',
-    status: 'all',
-    search: ''
+    search: '',
+    department: 'All Departments',
+    level: 'All Levels',
+    semester: 'All Semesters',
+    status: 'All Statuses'
   });
 
-  const departments = ['Informatics', 'Management'].filter(dept => dept !== '');
-  const academicLevels = ['ISI1', 'ISI2', 'ISI3', 'ISI4', 'ISI5', 'MGE1', 'MGE2', 'MGE3', 'MGE4', 'MGE5'].filter(level => level !== '');
-  const semesters = ['Semester 1', 'Semester 2'].filter(semester => semester !== '');
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  React.useEffect(() => {
-    let filtered = students;
+  const departments = ['All Departments', 'Informatics', 'Management', 'Engineering', 'Business'];
+  const levels = ['All Levels', 'ISI3', 'MGE2', 'GI1', 'GI2', 'GI3'];
+  const semesters = ['All Semesters', 'Semester 1', 'Semester 2'];
+  const statuses = ['All Statuses', 'active', 'inactive', 'graduated', 'suspended'];
 
-    if (filters.department !== 'all') {
-      filtered = filtered.filter(student => student.department === filters.department);
-    }
+  const filteredStudents = students.filter(student => {
+    const matchesSearch = !filters.search || 
+      student.firstName.toLowerCase().includes(filters.search.toLowerCase()) ||
+      student.lastName.toLowerCase().includes(filters.search.toLowerCase()) ||
+      student.email.toLowerCase().includes(filters.search.toLowerCase()) ||
+      student.studentId.toLowerCase().includes(filters.search.toLowerCase());
+    
+    const matchesDepartment = filters.department === 'All Departments' || student.department === filters.department;
+    const matchesLevel = filters.level === 'All Levels' || student.level === filters.level;
+    const matchesSemester = filters.semester === 'All Semesters' || student.semester === filters.semester;
+    const matchesStatus = filters.status === 'All Statuses' || student.status === filters.status;
+    
+    return matchesSearch && matchesDepartment && matchesLevel && matchesSemester && matchesStatus;
+  });
 
-    if (filters.academicLevel !== 'all') {
-      filtered = filtered.filter(student => student.academicLevel === filters.academicLevel);
-    }
+  const clearFilters = () => {
+    setFilters({
+      search: '',
+      department: 'All Departments',
+      level: 'All Levels',
+      semester: 'All Semesters',
+      status: 'All Statuses'
+    });
+  };
 
-    if (filters.semester !== 'all') {
-      filtered = filtered.filter(student => student.semester === filters.semester);
-    }
+  const handleViewDetails = (student: Student) => {
+    setSelectedStudent(student);
+    setIsDetailsDialogOpen(true);
+  };
 
-    if (filters.status !== 'all') {
-      filtered = filtered.filter(student => student.status === filters.status);
-    }
+  const handleEdit = (student: Student) => {
+    setSelectedStudent(student);
+    setIsEditDialogOpen(true);
+  };
 
-    if (filters.search) {
-      filtered = filtered.filter(student =>
-        student.firstName.toLowerCase().includes(filters.search.toLowerCase()) ||
-        student.lastName.toLowerCase().includes(filters.search.toLowerCase()) ||
-        student.email.toLowerCase().includes(filters.search.toLowerCase()) ||
-        student.studentId.toLowerCase().includes(filters.search.toLowerCase())
-      );
-    }
+  const handleSaveStudent = (updatedStudent: Student) => {
+    setStudents(prev => prev.map(s => s.id === updatedStudent.id ? updatedStudent : s));
+  };
 
-    setFilteredStudents(filtered);
-  }, [filters, students]);
-
-  const getStatusColor = (status: string) => {
+  const getStatusBadgeColor = (status: string) => {
     switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800';
-      case 'inactive':
-        return 'bg-red-100 text-red-800';
-      case 'graduated':
-        return 'bg-blue-100 text-blue-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+      case 'active': return 'default';
+      case 'graduated': return 'secondary';
+      case 'inactive': return 'outline';
+      case 'suspended': return 'destructive';
+      default: return 'outline';
     }
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Student Management</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Student Management</h1>
           <p className="text-gray-600">Manage student records and academic information</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Badge variant="outline" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-lg px-3 py-1">
+            <Users className="h-4 w-4 mr-1" />
             {filteredStudents.length} Students
           </Badge>
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Filters Section */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -142,28 +154,23 @@ const StudentManagement = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <div className="space-y-2">
-              <Label>Search</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search students..."
-                  className="pl-10"
-                  value={filters.search}
-                  onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                />
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Search</label>
+              <Input
+                placeholder="Search students..."
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+              />
             </div>
-
-            <div className="space-y-2">
-              <Label>Department</Label>
+            
+            <div>
+              <label className="text-sm font-medium mb-2 block">Department</label>
               <Select value={filters.department} onValueChange={(value) => setFilters({ ...filters, department: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="All Departments" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Departments</SelectItem>
                   {departments.map(dept => (
                     <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                   ))}
@@ -171,29 +178,27 @@ const StudentManagement = () => {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label>Academic Level</Label>
-              <Select value={filters.academicLevel} onValueChange={(value) => setFilters({ ...filters, academicLevel: value })}>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Academic Level</label>
+              <Select value={filters.level} onValueChange={(value) => setFilters({ ...filters, level: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="All Levels" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Levels</SelectItem>
-                  {academicLevels.map(level => (
+                  {levels.map(level => (
                     <SelectItem key={level} value={level}>{level}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label>Semester</Label>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Semester</label>
               <Select value={filters.semester} onValueChange={(value) => setFilters({ ...filters, semester: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="All Semesters" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Semesters</SelectItem>
                   {semesters.map(semester => (
                     <SelectItem key={semester} value={semester}>{semester}</SelectItem>
                   ))}
@@ -201,28 +206,22 @@ const StudentManagement = () => {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label>Status</Label>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Status</label>
               <Select value={filters.status} onValueChange={(value) => setFilters({ ...filters, status: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="All Statuses" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="graduated">Graduated</SelectItem>
+                  {statuses.map(status => (
+                    <SelectItem key={status} value={status}>{status}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label>&nbsp;</Label>
-              <Button 
-                variant="outline" 
-                onClick={() => setFilters({ department: 'all', academicLevel: 'all', semester: 'all', status: 'all', search: '' })}
-                className="w-full"
-              >
+            <div className="flex items-end">
+              <Button variant="outline" onClick={clearFilters} className="w-full">
                 Clear Filters
               </Button>
             </div>
@@ -234,53 +233,64 @@ const StudentManagement = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredStudents.map((student) => (
           <Card key={student.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="bg-blue-100 p-2 rounded-lg">
-                    <UserCheck className="h-5 w-5 text-blue-600" />
+                  <div className="bg-blue-100 p-2 rounded-full">
+                    <Users className="h-6 w-6 text-blue-600" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg">
+                    <h3 className="font-semibold text-lg text-gray-900">
                       {student.firstName} {student.lastName}
-                    </CardTitle>
-                    <CardDescription>{student.studentId}</CardDescription>
+                    </h3>
+                    <p className="text-blue-600 font-medium">{student.studentId}</p>
                   </div>
                 </div>
-                <Badge className={getStatusColor(student.status)}>
+                <Badge variant={getStatusBadgeColor(student.status)}>
                   {student.status}
                 </Badge>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Email:</span>
-                  <span className="font-medium text-xs">{student.email}</span>
+
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Email:</span>
+                  <span className="font-medium">{student.email}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Department:</span>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Department:</span>
                   <span className="font-medium">{student.department}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Level:</span>
-                  <Badge variant="outline">{student.academicLevel}</Badge>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Level:</span>
+                  <span className="font-medium">{student.level}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Semester:</span>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Semester:</span>
                   <span className="font-medium">{student.semester}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">GPA:</span>
-                  <span className="font-medium">{student.gpa.toFixed(2)}</span>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">GPA:</span>
+                  <span className="font-bold text-blue-600">{student.gpa.toFixed(2)}</span>
                 </div>
               </div>
 
-              <div className="flex gap-2 pt-3">
-                <Button variant="outline" size="sm" className="flex-1">
+              <div className="flex gap-2 mt-4">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => handleViewDetails(student)}
+                  className="flex-1"
+                >
+                  <Eye className="h-4 w-4 mr-1" />
                   View Details
                 </Button>
-                <Button variant="outline" size="sm" className="flex-1">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => handleEdit(student)}
+                  className="flex-1"
+                >
+                  <Edit className="h-4 w-4 mr-1" />
                   Edit
                 </Button>
               </div>
@@ -291,13 +301,33 @@ const StudentManagement = () => {
 
       {filteredStudents.length === 0 && (
         <Card>
-          <CardContent className="text-center py-8">
-            <GraduationCap className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-600 mb-2">No students found</h3>
-            <p className="text-gray-500">Try adjusting your filters to see more results.</p>
+          <CardContent className="text-center py-12">
+            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No students found</h3>
+            <p className="text-gray-600">Try adjusting your filters or search criteria.</p>
           </CardContent>
         </Card>
       )}
+
+      {/* Dialogs */}
+      <StudentDetailsDialog
+        student={selectedStudent}
+        isOpen={isDetailsDialogOpen}
+        onClose={() => {
+          setIsDetailsDialogOpen(false);
+          setSelectedStudent(null);
+        }}
+      />
+
+      <StudentEditDialog
+        student={selectedStudent}
+        isOpen={isEditDialogOpen}
+        onClose={() => {
+          setIsEditDialogOpen(false);
+          setSelectedStudent(null);
+        }}
+        onSave={handleSaveStudent}
+      />
     </div>
   );
 };

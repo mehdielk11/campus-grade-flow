@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Search, Edit, Key, Shield, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -20,6 +20,7 @@ interface User {
   role: 'super_admin' | 'administrator' | 'professor' | 'student';
   status: 'Active' | 'Inactive';
   lastLogin: string;
+  studentId?: string;
 }
 
 interface EditUserData {
@@ -28,6 +29,7 @@ interface EditUserData {
   email: string;
   role: 'super_admin' | 'administrator' | 'professor' | 'student';
   status: 'Active' | 'Inactive';
+  password?: string;
 }
 
 const UserPasswordManagement = () => {
@@ -60,6 +62,16 @@ const UserPasswordManagement = () => {
       role: 'professor',
       status: 'Active',
       lastLogin: '2024-01-13'
+    },
+    {
+      id: '4',
+      firstName: 'Alice',
+      lastName: 'Johnson',
+      email: 'STU001@supmti.ma',
+      role: 'student',
+      status: 'Active',
+      lastLogin: '2024-01-12',
+      studentId: 'STU001'
     }
   ]);
 
@@ -74,7 +86,8 @@ const UserPasswordManagement = () => {
     lastName: '', 
     email: '', 
     role: 'student', 
-    status: 'Active' 
+    status: 'Active',
+    password: ''
   });
 
   const roles = [
@@ -88,7 +101,8 @@ const UserPasswordManagement = () => {
     const matchesSearch = !searchTerm || 
       user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase());
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.studentId && user.studentId.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesRole = roleFilter === 'all' || user.role === roleFilter;
     
@@ -98,10 +112,10 @@ const UserPasswordManagement = () => {
   const handlePasswordReset = () => {
     if (!selectedUser || !newPassword) return;
 
-    if (newPassword.length < 6) {
+    if (newPassword.length < 3) {
       toast({
         title: "Password too short",
-        description: "Password must be at least 6 characters long.",
+        description: "Password must be at least 3 characters long.",
         variant: "destructive"
       });
       return;
@@ -165,7 +179,8 @@ const UserPasswordManagement = () => {
       lastName: user.lastName,
       email: user.email,
       role: user.role,
-      status: user.status
+      status: user.status,
+      password: ''
     });
     setIsEditDialogOpen(true);
   };
@@ -193,7 +208,7 @@ const UserPasswordManagement = () => {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
-              placeholder="Search users..."
+              placeholder="Search users by name, email, or student ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -223,6 +238,7 @@ const UserPasswordManagement = () => {
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Student ID</TableHead>
                 <TableHead>Last Login</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -244,6 +260,7 @@ const UserPasswordManagement = () => {
                       {user.status}
                     </Badge>
                   </TableCell>
+                  <TableCell>{user.studentId || '-'}</TableCell>
                   <TableCell>{user.lastLogin}</TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
@@ -288,6 +305,11 @@ const UserPasswordManagement = () => {
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="Enter new password"
                 />
+                {selectedUser?.role === 'student' && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Default password for students is their Student ID: {selectedUser.studentId}
+                  </p>
+                )}
               </div>
               <div className="flex justify-end space-x-2">
                 <Button variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>
@@ -303,7 +325,7 @@ const UserPasswordManagement = () => {
 
         {/* Edit User Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent>
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Edit User</DialogTitle>
             </DialogHeader>
@@ -344,6 +366,11 @@ const UserPasswordManagement = () => {
                   value={editData.email}
                   onChange={(e) => setEditData({ ...editData, email: e.target.value })}
                 />
+                {selectedUser?.role === 'student' && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Student emails follow format: [StudentCode]@supmti.ma
+                  </p>
+                )}
               </div>
               
               <div className="grid grid-cols-2 gap-4">
@@ -380,6 +407,17 @@ const UserPasswordManagement = () => {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              <div>
+                <Label htmlFor="editPassword">New Password (optional)</Label>
+                <Input
+                  id="editPassword"
+                  type="password"
+                  value={editData.password}
+                  onChange={(e) => setEditData({ ...editData, password: e.target.value })}
+                  placeholder="Leave blank to keep current password"
+                />
               </div>
               
               <div className="flex justify-end space-x-2">

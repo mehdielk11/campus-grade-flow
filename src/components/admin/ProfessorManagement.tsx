@@ -1,137 +1,139 @@
+
 import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Users, Search, Filter, UserCheck, BookOpen } from 'lucide-react';
+import { Users, Filter, Plus, Eye, Edit } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import ProfessorDetailsDialog from './ProfessorDetailsDialog';
+import ProfessorEditDialog from './ProfessorEditDialog';
 
 interface Professor {
   id: string;
-  employeeId: string;
   firstName: string;
   lastName: string;
   email: string;
+  professorId: string;
   department: string;
   specialization: string;
-  modules: string[];
-  status: 'active' | 'inactive' | 'on_leave';
+  status: string;
   joinDate: string;
 }
 
-const mockProfessors: Professor[] = [
-  {
-    id: '1',
-    employeeId: 'EMP001',
-    firstName: 'John',
-    lastName: 'Smith',
-    email: 'john.smith@university.edu',
-    department: 'Informatics',
-    specialization: 'Computer Science',
-    modules: ['CS101', 'CS201', 'CS301'],
-    status: 'active',
-    joinDate: '2020-09-01'
-  },
-  {
-    id: '2',
-    employeeId: 'EMP002',
-    firstName: 'Sarah',
-    lastName: 'Johnson',
-    email: 'sarah.johnson@university.edu',
-    department: 'Management',
-    specialization: 'Business Administration',
-    modules: ['MGE101', 'MGE201'],
-    status: 'active',
-    joinDate: '2019-08-15'
-  },
-  {
-    id: '3',
-    employeeId: 'EMP003',
-    firstName: 'Michael',
-    lastName: 'Brown',
-    email: 'michael.brown@university.edu',
-    department: 'Informatics',
-    specialization: 'Data Science',
-    modules: ['CS401'],
-    status: 'on_leave',
-    joinDate: '2021-01-10'
-  }
-];
-
 const ProfessorManagement = () => {
-  const [professors] = useState<Professor[]>(mockProfessors);
-  const [filteredProfessors, setFilteredProfessors] = useState<Professor[]>(mockProfessors);
+  const { toast } = useToast();
+  const [professors, setProfessors] = useState<Professor[]>([
+    {
+      id: '1',
+      firstName: 'Dr. John',
+      lastName: 'Smith',
+      email: 'john.smith@supmti.ma',
+      professorId: 'PROF001',
+      department: 'Informatics',
+      specialization: 'Computer Science',
+      status: 'active',
+      joinDate: '2020-09-01'
+    },
+    {
+      id: '2',
+      firstName: 'Dr. Sarah',
+      lastName: 'Johnson',
+      email: 'sarah.johnson@supmti.ma',
+      professorId: 'PROF002',
+      department: 'Management',
+      specialization: 'Business Administration',
+      status: 'active',
+      joinDate: '2019-01-15'
+    },
+    {
+      id: '3',
+      firstName: 'Dr. Michael',
+      lastName: 'Brown',
+      email: 'michael.brown@supmti.ma',
+      professorId: 'PROF003',
+      department: 'Engineering',
+      specialization: 'Software Engineering',
+      status: 'on-leave',
+      joinDate: '2018-08-20'
+    }
+  ]);
+
   const [filters, setFilters] = useState({
-    department: 'all',
-    status: 'all',
-    search: ''
+    search: '',
+    department: 'All Departments',
+    status: 'All Statuses'
   });
 
-  const departments = ['Informatics', 'Management'].filter(dept => dept !== '');
+  const [selectedProfessor, setSelectedProfessor] = useState<Professor | null>(null);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  React.useEffect(() => {
-    let filtered = professors;
+  const departments = ['All Departments', 'Informatics', 'Management', 'Engineering', 'Business'];
+  const statuses = ['All Statuses', 'active', 'inactive', 'retired', 'on-leave'];
 
-    if (filters.department !== 'all') {
-      filtered = filtered.filter(professor => professor.department === filters.department);
-    }
+  const filteredProfessors = professors.filter(professor => {
+    const matchesSearch = !filters.search || 
+      professor.firstName.toLowerCase().includes(filters.search.toLowerCase()) ||
+      professor.lastName.toLowerCase().includes(filters.search.toLowerCase()) ||
+      professor.email.toLowerCase().includes(filters.search.toLowerCase()) ||
+      professor.professorId.toLowerCase().includes(filters.search.toLowerCase());
+    
+    const matchesDepartment = filters.department === 'All Departments' || professor.department === filters.department;
+    const matchesStatus = filters.status === 'All Statuses' || professor.status === filters.status;
+    
+    return matchesSearch && matchesDepartment && matchesStatus;
+  });
 
-    if (filters.status !== 'all') {
-      filtered = filtered.filter(professor => professor.status === filters.status);
-    }
-
-    if (filters.search) {
-      filtered = filtered.filter(professor =>
-        professor.firstName.toLowerCase().includes(filters.search.toLowerCase()) ||
-        professor.lastName.toLowerCase().includes(filters.search.toLowerCase()) ||
-        professor.email.toLowerCase().includes(filters.search.toLowerCase()) ||
-        professor.employeeId.toLowerCase().includes(filters.search.toLowerCase()) ||
-        professor.specialization.toLowerCase().includes(filters.search.toLowerCase())
-      );
-    }
-
-    setFilteredProfessors(filtered);
-  }, [filters, professors]);
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800';
-      case 'inactive':
-        return 'bg-red-100 text-red-800';
-      case 'on_leave':
-        return 'bg-yellow-100 text-yellow-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
+  const clearFilters = () => {
+    setFilters({
+      search: '',
+      department: 'All Departments',
+      status: 'All Statuses'
+    });
   };
 
-  const getStatusLabel = (status: string) => {
+  const handleViewDetails = (professor: Professor) => {
+    setSelectedProfessor(professor);
+    setIsDetailsDialogOpen(true);
+  };
+
+  const handleEdit = (professor: Professor) => {
+    setSelectedProfessor(professor);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveProfessor = (updatedProfessor: Professor) => {
+    setProfessors(prev => prev.map(p => p.id === updatedProfessor.id ? updatedProfessor : p));
+  };
+
+  const getStatusBadgeColor = (status: string) => {
     switch (status) {
-      case 'on_leave':
-        return 'On Leave';
-      default:
-        return status.charAt(0).toUpperCase() + status.slice(1);
+      case 'active': return 'default';
+      case 'retired': return 'secondary';
+      case 'inactive': return 'outline';
+      case 'on-leave': return 'destructive';
+      default: return 'outline';
     }
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Professor Management</h1>
-          <p className="text-gray-600">Manage faculty members and their academic information</p>
+          <h1 className="text-3xl font-bold text-gray-900">Professor Management</h1>
+          <p className="text-gray-600">Manage professor records and academic information</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Badge variant="outline" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-lg px-3 py-1">
+            <Users className="h-4 w-4 mr-1" />
             {filteredProfessors.length} Professors
           </Badge>
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Filters Section */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -140,28 +142,23 @@ const ProfessorManagement = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label>Search</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search professors..."
-                  className="pl-10"
-                  value={filters.search}
-                  onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                />
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Search</label>
+              <Input
+                placeholder="Search professors..."
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+              />
             </div>
-
-            <div className="space-y-2">
-              <Label>Department</Label>
+            
+            <div>
+              <label className="text-sm font-medium mb-2 block">Department</label>
               <Select value={filters.department} onValueChange={(value) => setFilters({ ...filters, department: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="All Departments" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Departments</SelectItem>
                   {departments.map(dept => (
                     <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                   ))}
@@ -169,28 +166,22 @@ const ProfessorManagement = () => {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label>Status</Label>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Status</label>
               <Select value={filters.status} onValueChange={(value) => setFilters({ ...filters, status: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="All Statuses" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="on_leave">On Leave</SelectItem>
+                  {statuses.map(status => (
+                    <SelectItem key={status} value={status}>{status}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label>&nbsp;</Label>
-              <Button 
-                variant="outline" 
-                onClick={() => setFilters({ department: 'all', status: 'all', search: '' })}
-                className="w-full"
-              >
+            <div className="flex items-end">
+              <Button variant="outline" onClick={clearFilters} className="w-full">
                 Clear Filters
               </Button>
             </div>
@@ -202,59 +193,60 @@ const ProfessorManagement = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredProfessors.map((professor) => (
           <Card key={professor.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="bg-green-100 p-2 rounded-lg">
-                    <UserCheck className="h-5 w-5 text-green-600" />
+                  <div className="bg-green-100 p-2 rounded-full">
+                    <Users className="h-6 w-6 text-green-600" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg">
+                    <h3 className="font-semibold text-lg text-gray-900">
                       {professor.firstName} {professor.lastName}
-                    </CardTitle>
-                    <CardDescription>{professor.employeeId}</CardDescription>
+                    </h3>
+                    <p className="text-green-600 font-medium">{professor.professorId}</p>
                   </div>
                 </div>
-                <Badge className={getStatusColor(professor.status)}>
-                  {getStatusLabel(professor.status)}
+                <Badge variant={getStatusBadgeColor(professor.status)}>
+                  {professor.status}
                 </Badge>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Email:</span>
-                  <span className="font-medium text-xs">{professor.email}</span>
+
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Email:</span>
+                  <span className="font-medium">{professor.email}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Department:</span>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Department:</span>
                   <span className="font-medium">{professor.department}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Specialization:</span>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Specialization:</span>
                   <span className="font-medium">{professor.specialization}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Join Date:</span>
-                  <span className="font-medium">{new Date(professor.joinDate).toLocaleDateString()}</span>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-gray-500 text-sm">Modules:</span>
-                  <div className="flex flex-wrap gap-1">
-                    {professor.modules.map((module) => (
-                      <Badge key={module} variant="outline" className="text-xs">
-                        {module}
-                      </Badge>
-                    ))}
-                  </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Join Date:</span>
+                  <span className="font-medium">{professor.joinDate}</span>
                 </div>
               </div>
 
-              <div className="flex gap-2 pt-3">
-                <Button variant="outline" size="sm" className="flex-1">
+              <div className="flex gap-2 mt-4">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => handleViewDetails(professor)}
+                  className="flex-1"
+                >
+                  <Eye className="h-4 w-4 mr-1" />
                   View Details
                 </Button>
-                <Button variant="outline" size="sm" className="flex-1">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => handleEdit(professor)}
+                  className="flex-1"
+                >
+                  <Edit className="h-4 w-4 mr-1" />
                   Edit
                 </Button>
               </div>
@@ -265,13 +257,33 @@ const ProfessorManagement = () => {
 
       {filteredProfessors.length === 0 && (
         <Card>
-          <CardContent className="text-center py-8">
-            <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-600 mb-2">No professors found</h3>
-            <p className="text-gray-500">Try adjusting your filters to see more results.</p>
+          <CardContent className="text-center py-12">
+            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No professors found</h3>
+            <p className="text-gray-600">Try adjusting your filters or search criteria.</p>
           </CardContent>
         </Card>
       )}
+
+      {/* Dialogs */}
+      <ProfessorDetailsDialog
+        professor={selectedProfessor}
+        isOpen={isDetailsDialogOpen}
+        onClose={() => {
+          setIsDetailsDialogOpen(false);
+          setSelectedProfessor(null);
+        }}
+      />
+
+      <ProfessorEditDialog
+        professor={selectedProfessor}
+        isOpen={isEditDialogOpen}
+        onClose={() => {
+          setIsEditDialogOpen(false);
+          setSelectedProfessor(null);
+        }}
+        onSave={handleSaveProfessor}
+      />
     </div>
   );
 };
