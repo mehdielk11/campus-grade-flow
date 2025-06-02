@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,6 +19,14 @@ interface User {
   role: 'super_admin' | 'administrator' | 'professor' | 'student';
   status: 'Active' | 'Inactive';
   lastLogin: string;
+}
+
+interface EditUserData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: 'super_admin' | 'administrator' | 'professor' | 'student';
+  status: 'Active' | 'Inactive';
 }
 
 const UserPasswordManagement = () => {
@@ -61,14 +68,20 @@ const UserPasswordManagement = () => {
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [newPassword, setNewPassword] = useState('');
-  const [editData, setEditData] = useState({ firstName: '', lastName: '', email: '', role: '', status: '' });
+  const [editData, setEditData] = useState<EditUserData>({ 
+    firstName: '', 
+    lastName: '', 
+    email: '', 
+    role: 'student', 
+    status: 'Active' 
+  });
 
   const roles = [
     { value: 'super_admin', label: 'Super Admin' },
     { value: 'administrator', label: 'Administrator' },
     { value: 'professor', label: 'Professor' },
     { value: 'student', label: 'Student' }
-  ];
+  ] as const;
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = !searchTerm || 
@@ -119,7 +132,14 @@ const UserPasswordManagement = () => {
     }
 
     setUsers(prev => prev.map(user => 
-      user.id === selectedUser.id ? { ...user, ...editData } : user
+      user.id === selectedUser.id ? { 
+        ...user, 
+        firstName: editData.firstName,
+        lastName: editData.lastName,
+        email: editData.email,
+        role: editData.role,
+        status: editData.status
+      } : user
     ));
 
     toast({
