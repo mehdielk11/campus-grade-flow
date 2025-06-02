@@ -1,237 +1,131 @@
-
 import React from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { 
-  GraduationCap, 
-  Home, 
-  Users, 
-  BookOpen, 
-  Building2, 
-  FileText, 
-  Settings, 
-  LogOut,
-  ClipboardList,
-  BarChart3,
-  UserCheck,
-  Database
-} from 'lucide-react';
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from '@/components/ui/sidebar';
+  LayoutDashboard,
+  BarChart,
+  Building,
+  BookOpen,
+  Users,
+  UserCheck,
+  UserCog,
+  Database,
+  Settings,
+  Edit,
+  FileText,
+  User,
+  Link
+} from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { SidebarProps } from '@/types';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import { Menu } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { useMediaQuery } from '@/hooks/use-media-query';
+import { Link as RouterLink } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 
-interface SidebarItem {
-  title: string;
-  icon: React.ComponentType<any>;
-  href?: string;
-  roles: string[];
-}
-
-const sidebarItems: SidebarItem[] = [
-  {
-    title: 'Dashboard',
-    icon: Home,
-    href: '/dashboard',
-    roles: ['super_admin', 'administrator', 'professor', 'student']
-  },
-  {
-    title: 'My Grades',
-    icon: ClipboardList,
-    href: '/grades',
-    roles: ['student']
-  },
-  {
-    title: 'My Profile',
-    icon: UserCheck,
-    href: '/profile',
-    roles: ['student']
-  },
-  {
-    title: 'Transcripts',
-    icon: FileText,
-    href: '/transcripts',
-    roles: ['student']
-  },
-  {
-    title: 'Grade Entry',
-    icon: ClipboardList,
-    href: '/grade-entry',
-    roles: ['professor']
-  },
-  {
-    title: 'My Classes',
-    icon: BookOpen,
-    href: '/classes',
-    roles: ['professor']
-  },
-  {
-    title: 'Reports',
-    icon: BarChart3,
-    href: '/reports',
-    roles: ['professor', 'administrator', 'super_admin']
-  },
-  {
-    title: 'Departments',
-    icon: Building2,
-    href: '/departments',
-    roles: ['administrator', 'super_admin']
-  },
-  {
-    title: 'Modules & Courses',
-    icon: BookOpen,
-    href: '/modules',
-    roles: ['administrator', 'super_admin']
-  },
-  {
-    title: 'Students',
-    icon: Users,
-    href: '/students',
-    roles: ['administrator', 'super_admin']
-  },
-  {
-    title: 'Professors',
-    icon: UserCheck,
-    href: '/professors',
-    roles: ['administrator', 'super_admin']
-  },
-  {
-    title: 'User Management',
-    icon: Users,
-    href: '/users',
-    roles: ['super_admin']
-  },
-  {
-    title: 'System Backup',
-    icon: Database,
-    href: '/backup',
-    roles: ['super_admin']
-  },
-  {
-    title: 'Settings',
-    icon: Settings,
-    href: '/settings',
-    roles: ['super_admin', 'administrator', 'professor', 'student']
-  }
-];
-
-const AppSidebar = () => {
+const Sidebar = ({ isCollapsed }: SidebarProps) => {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const [open, setOpen] = React.useState(false);
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
-  const filteredItems = sidebarItems.filter(item => 
-    user && item.roles.includes(user.role)
+  const navigationItems = [
+    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Reports', href: '/reports', icon: BarChart },
+    ...(user?.role === 'admin' || user?.role === 'super-admin' ? [
+      { name: 'Filières', href: '/departments', icon: Building },
+      { name: 'Modules', href: '/modules', icon: BookOpen },
+      { name: 'Module Assignment', href: '/module-assignment', icon: Link },
+      { name: 'Students', href: '/students', icon: Users },
+      { name: 'Professors', href: '/professors', icon: UserCheck },
+    ] : []),
+    ...(user?.role === 'professor' ? [
+      { name: 'Classes', href: '/classes', icon: Users },
+      { name: 'Grade Entry', href: '/grade-entry', icon: Edit },
+    ] : []),
+    ...(user?.role === 'student' ? [
+      { name: 'Grades', href: '/grades', icon: BarChart },
+      { name: 'Transcripts', href: '/transcripts', icon: FileText },
+      { name: 'Profile', href: '/profile', icon: User },
+    ] : []),
+    ...(user?.role === 'super-admin' ? [
+      { name: 'User Management', href: '/users', icon: UserCog },
+      { name: 'System Backup', href: '/backup', icon: Database },
+    ] : []),
+    { name: 'Settings', href: '/settings', icon: Settings },
+  ];
+
+  const renderSidebarContent = () => (
+    <div className="flex flex-col h-full">
+      <div className="flex items-center px-4 py-6">
+        <RouterLink to="/profile" className="flex items-center gap-2">
+          <Avatar className="w-8 h-8">
+            <AvatarImage src="https://github.com/shadcn.png" alt="Avatar" />
+            <AvatarFallback>CN</AvatarFallback>
+          </Avatar>
+          <span className={cn("text-sm font-medium", isCollapsed && "hidden")}>
+            {user?.firstName} {user?.lastName}
+          </span>
+        </RouterLink>
+      </div>
+      <ScrollArea className="flex-1 px-3">
+        <div className="space-y-1">
+          {navigationItems.map((item) => (
+            <RouterLink
+              key={item.name}
+              to={item.href}
+              className="group flex items-center space-x-3 rounded-md p-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
+            >
+              <item.icon className="h-4 w-4" />
+              <span className={cn("text-sm font-medium", isCollapsed && "hidden")}>
+                {item.name}
+              </span>
+            </RouterLink>
+          ))}
+        </div>
+      </ScrollArea>
+      <div className="p-4">
+        <Button variant="outline" size="sm" className="w-full" onClick={logout}>
+          Logout
+        </Button>
+      </div>
+    </div>
   );
 
-  const handleNavigation = (href: string) => {
-    navigate(href);
-  };
-
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'super_admin':
-        return 'text-red-600';
-      case 'administrator':
-        return 'text-blue-600';
-      case 'professor':
-        return 'text-green-600';
-      case 'student':
-        return 'text-purple-600';
-      default:
-        return 'text-gray-600';
-    }
-  };
-
-  const getRoleLabel = (role: string) => {
-    switch (role) {
-      case 'super_admin':
-        return 'Super Administrator';
-      case 'administrator':
-        return 'Administrator';
-      case 'professor':
-        return 'Professor';
-      case 'student':
-        return 'Student';
-      default:
-        return role;
-    }
-  };
+  if (isMobile) {
+    return (
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger asChild>
+          <Button variant="ghost" size="sm" className="p-1.5">
+            <Menu className="h-4 w-4" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="p-0 w-80">
+          <SheetHeader className="pl-0 pr-6">
+            <SheetTitle>Menu</SheetTitle>
+            <SheetDescription>
+              Navigate through the application.
+            </SheetDescription>
+          </SheetHeader>
+          {renderSidebarContent()}
+        </SheetContent>
+      </Sheet>
+    );
+  }
 
   return (
-    <Sidebar>
-      <SidebarHeader className="border-b border-gray-200">
-        <div className="flex items-center gap-3 px-3 py-4">
-          <div className="bg-blue-600 p-2 rounded-lg">
-            <GraduationCap className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h2 className="font-semibold text-gray-900">Grade Portal</h2>
-            <p className="text-xs text-gray-500">University System</p>
-          </div>
-        </div>
-      </SidebarHeader>
-
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {filteredItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    onClick={() => item.href && handleNavigation(item.href)}
-                    className={`cursor-pointer ${location.pathname === item.href ? 'bg-blue-100 text-blue-700' : ''}`}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-
-      <SidebarFooter className="border-t border-gray-200">
-        {user && (
-          <div className="p-4 space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="bg-gray-100 rounded-full p-2">
-                <UserCheck className="h-4 w-4 text-gray-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
-                  {user.firstName} {user.lastName}
-                </p>
-                <p className={`text-xs truncate font-medium ${getRoleColor(user.role)}`}>
-                  {getRoleLabel(user.role)}
-                </p>
-              </div>
-            </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={logout}
-              className="w-full flex items-center gap-2"
-            >
-              <LogOut className="h-4 w-4" />
-              Sign Out
-            </Button>
-          </div>
-        )}
-      </SidebarFooter>
-    </Sidebar>
+    <div className={`flex flex-col w-64 border-r border-r-muted shrink-0 transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
+      {renderSidebarContent()}
+    </div>
   );
 };
 
-export default AppSidebar;
+export default Sidebar;
