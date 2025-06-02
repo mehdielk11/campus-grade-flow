@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -71,9 +70,9 @@ const ModuleManagement = () => {
     name: '',
     description: '',
     credits: 3,
-    department: '',
-    academicLevel: '',
-    semester: '',
+    department: 'Informatics',
+    academicLevel: 'ISI1',
+    semester: 'Semester 1',
     professor: '',
     capacity: 30,
     status: 'active' as 'active' | 'inactive'
@@ -181,9 +180,9 @@ const ModuleManagement = () => {
       name: '',
       description: '',
       credits: 3,
-      department: '',
-      academicLevel: '',
-      semester: '',
+      department: 'Informatics',
+      academicLevel: 'ISI1',
+      semester: 'Semester 1',
       professor: '',
       capacity: 30,
       status: 'active'
