@@ -2,6 +2,7 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   GraduationCap, 
   Home, 
@@ -125,10 +126,16 @@ const sidebarItems: SidebarItem[] = [
 
 const AppSidebar = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const filteredItems = sidebarItems.filter(item => 
     user && item.roles.includes(user.role)
   );
+
+  const handleNavigation = (href: string) => {
+    navigate(href);
+  };
 
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -181,11 +188,12 @@ const AppSidebar = () => {
             <SidebarMenu>
               {filteredItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.href || '#'} className="flex items-center gap-3">
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </a>
+                  <SidebarMenuButton 
+                    onClick={() => item.href && handleNavigation(item.href)}
+                    className={`cursor-pointer ${location.pathname === item.href ? 'bg-blue-100 text-blue-700' : ''}`}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.title}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
