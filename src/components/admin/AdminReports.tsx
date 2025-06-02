@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,8 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 const AdminReports = () => {
   const { toast } = useToast();
   const [selectedReport, setSelectedReport] = useState('enrollment');
-  const [selectedDepartment, setSelectedDepartment] = useState('');
-  const [selectedSemester, setSelectedSemester] = useState('');
+  const [selectedDepartment, setSelectedDepartment] = useState('all');
+  const [selectedSemester, setSelectedSemester] = useState('all');
 
   const departments = ['Informatics', 'Management'];
   const semesters = ['Semester 1', 'Semester 2'];
@@ -224,7 +223,7 @@ const AdminReports = () => {
                 <SelectValue placeholder="Filter by Department" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Departments</SelectItem>
+                <SelectItem value="all">All Departments</SelectItem>
                 {departments.map((dept) => (
                   <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                 ))}
@@ -236,7 +235,7 @@ const AdminReports = () => {
                 <SelectValue placeholder="Filter by Semester" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Semesters</SelectItem>
+                <SelectItem value="all">All Semesters</SelectItem>
                 {semesters.map((semester) => (
                   <SelectItem key={semester} value={semester}>{semester}</SelectItem>
                 ))}
