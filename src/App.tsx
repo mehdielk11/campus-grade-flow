@@ -14,6 +14,7 @@ import Professors from "./pages/Professors";
 import Reports from "./pages/Reports";
 import Backup from "./pages/Backup";
 import Settings from "./pages/Settings";
+import Users from "./pages/Users";
 import GradeEntry from "./pages/GradeEntry";
 import Classes from "./pages/Classes";
 import Grades from "./pages/Grades";
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/reports" element={<Reports />} />
             <Route path="/backup" element={<Backup />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/users" element={<Users />} />
             <Route path="/grade-entry" element={<GradeEntry />} />
             <Route path="/classes" element={<Classes />} />
             <Route path="/grades" element={<Grades />} />
