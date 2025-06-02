@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Plus, Edit, Trash2, BookOpen, Filter } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -15,7 +17,7 @@ interface Module {
   name: string;
   description: string;
   credits: number;
-  department: string;
+  filiere: string;
   academicLevel: string;
   semester: string;
   professor: string;
@@ -31,8 +33,8 @@ const mockModules: Module[] = [
     name: 'Introduction to Computer Science',
     description: 'Fundamentals of computer science and programming',
     credits: 3,
-    department: 'Informatics',
-    academicLevel: 'ISI1',
+    filiere: 'IISI',
+    academicLevel: 'Level 1',
     semester: 'Semester 1',
     professor: 'Dr. John Smith',
     capacity: 30,
@@ -45,8 +47,8 @@ const mockModules: Module[] = [
     name: 'Business Management',
     description: 'Principles of business management and organization',
     credits: 4,
-    department: 'Management',
-    academicLevel: 'MGE2',
+    filiere: 'MGE',
+    academicLevel: 'Level 2',
     semester: 'Semester 1',
     professor: 'Dr. Sarah Johnson',
     capacity: 25,
@@ -61,7 +63,7 @@ const ModuleManagement = () => {
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filters, setFilters] = useState({
-    department: 'all',
+    filiere: 'all',
     academicLevel: 'all',
     semester: 'all'
   });
@@ -70,8 +72,8 @@ const ModuleManagement = () => {
     name: '',
     description: '',
     credits: 3,
-    department: 'Informatics',
-    academicLevel: 'ISI1',
+    filiere: 'MGE',
+    academicLevel: 'Level 1',
     semester: 'Semester 1',
     professor: '',
     capacity: 30,
@@ -79,15 +81,15 @@ const ModuleManagement = () => {
   });
   const { toast } = useToast();
 
-  const departments = ['Informatics', 'Management'].filter(dept => dept !== '');
-  const academicLevels = ['ISI1', 'ISI2', 'ISI3', 'ISI4', 'ISI5', 'MGE1', 'MGE2', 'MGE3', 'MGE4', 'MGE5'].filter(level => level !== '');
-  const semesters = ['Semester 1', 'Semester 2'].filter(semester => semester !== '');
+  const filieres = ['MGE', 'MDI', 'FACG', 'MRI', 'IISI', 'IISRT'];
+  const academicLevels = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'];
+  const semesters = ['Semester 1', 'Semester 2'];
 
   React.useEffect(() => {
     let filtered = modules;
 
-    if (filters.department !== 'all') {
-      filtered = filtered.filter(module => module.department === filters.department);
+    if (filters.filiere !== 'all') {
+      filtered = filtered.filter(module => module.filiere === filters.filiere);
     }
 
     if (filters.academicLevel !== 'all') {
@@ -102,7 +104,7 @@ const ModuleManagement = () => {
   }, [filters, modules]);
 
   const handleAdd = () => {
-    if (!formData.code || !formData.name || !formData.department) {
+    if (!formData.code || !formData.name || !formData.filiere) {
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields.",
@@ -133,7 +135,7 @@ const ModuleManagement = () => {
       name: module.name,
       description: module.description,
       credits: module.credits,
-      department: module.department,
+      filiere: module.filiere,
       academicLevel: module.academicLevel,
       semester: module.semester,
       professor: module.professor,
@@ -143,7 +145,7 @@ const ModuleManagement = () => {
   };
 
   const handleUpdate = () => {
-    if (!formData.code || !formData.name || !formData.department) {
+    if (!formData.code || !formData.name || !formData.filiere) {
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields.",
@@ -166,11 +168,11 @@ const ModuleManagement = () => {
     });
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (id: string, moduleName: string) => {
     setModules(modules.filter(module => module.id !== id));
     toast({
       title: "Module Deleted",
-      description: "Module has been successfully removed.",
+      description: `Module "${moduleName}" has been successfully removed.`,
     });
   };
 
@@ -180,8 +182,8 @@ const ModuleManagement = () => {
       name: '',
       description: '',
       credits: 3,
-      department: 'Informatics',
-      academicLevel: 'ISI1',
+      filiere: 'MGE',
+      academicLevel: 'Level 1',
       semester: 'Semester 1',
       professor: '',
       capacity: 30,
@@ -215,15 +217,15 @@ const ModuleManagement = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
-              <Label>Department</Label>
-              <Select value={filters.department} onValueChange={(value) => setFilters({ ...filters, department: value })}>
+              <Label>Filière</Label>
+              <Select value={filters.filiere} onValueChange={(value) => setFilters({ ...filters, filiere: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="All Departments" />
+                  <SelectValue placeholder="All Filières" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Departments</SelectItem>
-                  {departments.map(dept => (
-                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                  <SelectItem value="all">All Filières</SelectItem>
+                  {filieres.map(filiere => (
+                    <SelectItem key={filiere} value={filiere}>{filiere}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -263,7 +265,7 @@ const ModuleManagement = () => {
               <Label>&nbsp;</Label>
               <Button 
                 variant="outline" 
-                onClick={() => setFilters({ department: 'all', academicLevel: 'all', semester: 'all' })}
+                onClick={() => setFilters({ filiere: 'all', academicLevel: 'all', semester: 'all' })}
                 className="w-full"
               >
                 Clear Filters
@@ -304,14 +306,14 @@ const ModuleManagement = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="department">Department *</Label>
-                <Select value={formData.department} onValueChange={(value) => setFormData({ ...formData, department: value })}>
+                <Label htmlFor="filiere">Filière *</Label>
+                <Select value={formData.filiere} onValueChange={(value) => setFormData({ ...formData, filiere: value })}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
+                    <SelectValue placeholder="Select filière" />
                   </SelectTrigger>
                   <SelectContent>
-                    {departments.map(dept => (
-                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                    {filieres.map(filiere => (
+                      <SelectItem key={filiere} value={filiere}>{filiere}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -437,8 +439,8 @@ const ModuleManagement = () => {
               
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Department:</span>
-                  <span className="font-medium">{module.department}</span>
+                  <span className="text-gray-500">Filière:</span>
+                  <span className="font-medium">{module.filiere}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Level:</span>
@@ -472,15 +474,35 @@ const ModuleManagement = () => {
                   <Edit className="h-3 w-3" />
                   Edit
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDelete(module.id)}
-                  className="flex items-center gap-1 text-red-600 hover:text-red-700"
-                >
-                  <Trash2 className="h-3 w-3" />
-                  Delete
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-1 text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      Delete
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the module "{module.name}" ({module.code}) and remove all associated data.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => handleDelete(module.id, module.name)}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        Delete Module
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </CardContent>
           </Card>
