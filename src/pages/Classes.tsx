@@ -1,14 +1,14 @@
 
 import React from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import StudentManagement from '@/components/admin/StudentManagement';
+import ClassRoster from '@/components/professor/ClassRoster';
 
-const Students = () => {
+const Classes = () => {
   return (
     <DashboardLayout>
-      <StudentManagement />
+      <ClassRoster />
     </DashboardLayout>
   );
 };
 
-export default Students;
+export default Classes;

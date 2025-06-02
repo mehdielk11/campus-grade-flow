@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 import AdminReports from '@/components/admin/AdminReports';
 import GradeReports from '@/components/professor/GradeReports';
 
@@ -9,12 +10,11 @@ const Reports = () => {
 
   if (!user) return null;
 
-  // Show different reports based on user role
-  if (user.role === 'professor') {
-    return <GradeReports />;
-  }
-
-  return <AdminReports />;
+  return (
+    <DashboardLayout>
+      {user.role === 'professor' ? <GradeReports /> : <AdminReports />}
+    </DashboardLayout>
+  );
 };
 
 export default Reports;

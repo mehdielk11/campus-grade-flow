@@ -14,6 +14,12 @@ import Professors from "./pages/Professors";
 import Reports from "./pages/Reports";
 import Users from "./pages/Users";
 import Backup from "./pages/Backup";
+import Settings from "./pages/Settings";
+import GradeEntry from "./pages/GradeEntry";
+import Classes from "./pages/Classes";
+import Grades from "./pages/Grades";
+import Profile from "./pages/Profile";
+import Transcripts from "./pages/Transcripts";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +41,12 @@ const App = () => (
             <Route path="/reports" element={<Reports />} />
             <Route path="/users" element={<Users />} />
             <Route path="/backup" element={<Backup />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/grade-entry" element={<GradeEntry />} />
+            <Route path="/classes" element={<Classes />} />
+            <Route path="/grades" element={<Grades />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/transcripts" element={<Transcripts />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

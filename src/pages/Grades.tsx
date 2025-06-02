@@ -1,14 +1,14 @@
 
 import React from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import StudentManagement from '@/components/admin/StudentManagement';
+import GradeViewer from '@/components/student/GradeViewer';
 
-const Students = () => {
+const Grades = () => {
   return (
     <DashboardLayout>
-      <StudentManagement />
+      <GradeViewer />
     </DashboardLayout>
   );
 };
 
-export default Students;
+export default Grades;
