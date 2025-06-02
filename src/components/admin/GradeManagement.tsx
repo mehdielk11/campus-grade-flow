@@ -1,18 +1,20 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
 import { Download, Edit, Settings, GraduationCap, BookOpen, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { FILIERES } from '@/types';
 
 const GradeManagement = () => {
   const { toast } = useToast();
+  const [selectedFiliere, setSelectedFiliere] = useState('all');
   const [selectedLevel, setSelectedLevel] = useState('all');
   const [selectedSemester, setSelectedSemester] = useState('all');
   const [selectedModule, setSelectedModule] = useState('all');
@@ -20,9 +22,7 @@ const GradeManagement = () => {
   const [gradeWeights, setGradeWeights] = useState<{ [key: string]: { cc: number, exam: number } }>({});
   const [showAddStudent, setShowAddStudent] = useState(false);
 
-  const academicLevels = ['ISI1', 'ISI2', 'ISI3', 'ISI4', 'ISI5', 'MGE1', 'MGE2', 'MGE3', 'MGE4', 'MGE5'];
   const semesters = ['Semester 1', 'Semester 2'];
-  const departments = ['Computer Science', 'Management', 'Engineering'];
   const modules = [
     { id: 'math101', name: 'Mathematics I', level: 'ISI1' },
     { id: 'prog101', name: 'Programming I', level: 'ISI1' },
@@ -31,6 +31,15 @@ const GradeManagement = () => {
     { id: 'algo301', name: 'Algorithms', level: 'ISI3' },
     { id: 'db301', name: 'Database Systems', level: 'ISI3' },
   ];
+
+  // Get available levels based on selected filière
+  const getAvailableLevels = () => {
+    if (selectedFiliere === 'all') {
+      return [];
+    }
+    const filiere = FILIERES.find(f => f.name === selectedFiliere);
+    return filiere ? filiere.levels : [];
+  };
 
   // Mock student grades data
   const [studentGrades, setStudentGrades] = useState([
@@ -41,7 +50,7 @@ const GradeManagement = () => {
       lastName: 'Doe',
       level: 'ISI3',
       semester: 'Semester 1',
-      department: 'Computer Science',
+      filiere: 'IISI',
       grades: {
         'algo301': { cc: 15, exam: 14, final: 14.3 },
         'db301': { cc: 16, exam: 15, final: 15.3 }
@@ -54,7 +63,7 @@ const GradeManagement = () => {
       lastName: 'Smith',
       level: 'ISI3',
       semester: 'Semester 1',
-      department: 'Computer Science',
+      filiere: 'IISI',
       grades: {
         'algo301': { cc: 14, exam: 16, final: 15.4 },
         'db301': { cc: 17, exam: 14, final: 14.9 }
@@ -67,7 +76,7 @@ const GradeManagement = () => {
       lastName: 'Johnson',
       level: 'ISI3',
       semester: 'Semester 1',
-      department: 'Computer Science',
+      filiere: 'IISI',
       grades: {
         'algo301': { cc: 18, exam: 17, final: 17.3 },
         'db301': { cc: 15, exam: 16, final: 15.7 }
@@ -81,14 +90,15 @@ const GradeManagement = () => {
   };
 
   const filteredStudents = studentGrades.filter(student => {
-    const levelMatch = selectedLevel === 'all' || student.level === selectedLevel;
+    const filiereMatch = selectedFiliere === 'all' || student.filiere === selectedFiliere;
+    const levelMatch = selectedLevel === 'all' || student.level === `ISI${selectedLevel}`;
     const semesterMatch = selectedSemester === 'all' || student.semester === selectedSemester;
-    return levelMatch && semesterMatch;
+    return filiereMatch && levelMatch && semesterMatch;
   });
 
   const filteredModules = modules.filter(module => {
     if (selectedLevel === 'all') return true;
-    return module.level === selectedLevel;
+    return module.level === `ISI${selectedLevel}`;
   });
 
   const handleGradeUpdate = (studentId: string, moduleId: string, gradeType: 'cc' | 'exam', value: number) => {
@@ -186,89 +196,6 @@ const GradeManagement = () => {
     return 'text-red-600 font-semibold';
   };
 
-  const AddStudentForm = () => {
-    const [formData, setFormData] = useState({
-      firstName: '',
-      lastName: '',
-      department: '',
-      level: '',
-      semester: ''
-    });
-
-    return (
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label>First Name</Label>
-            <Input
-              value={formData.firstName}
-              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-            />
-          </div>
-          <div>
-            <Label>Last Name</Label>
-            <Input
-              value={formData.lastName}
-              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-            />
-          </div>
-        </div>
-        
-        <div>
-          <Label>Department</Label>
-          <Select value={formData.department} onValueChange={(value) => setFormData({ ...formData, department: value })}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select Department" />
-            </SelectTrigger>
-            <SelectContent>
-              {departments.map((dept) => (
-                <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label>Academic Level</Label>
-            <Select value={formData.level} onValueChange={(value) => setFormData({ ...formData, level: value })}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select Level" />
-              </SelectTrigger>
-              <SelectContent>
-                {academicLevels.map((level) => (
-                  <SelectItem key={level} value={level}>{level}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div>
-            <Label>Semester</Label>
-            <Select value={formData.semester} onValueChange={(value) => setFormData({ ...formData, semester: value })}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select Semester" />
-              </SelectTrigger>
-              <SelectContent>
-                {semesters.map((semester) => (
-                  <SelectItem key={semester} value={semester}>{semester}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <Button 
-          onClick={() => handleAddStudent(formData)} 
-          className="w-full"
-          disabled={!formData.firstName || !formData.lastName || !formData.department || !formData.level || !formData.semester}
-        >
-          Add Student
-        </Button>
-      </div>
-    );
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -291,7 +218,7 @@ const GradeManagement = () => {
               <DialogHeader>
                 <DialogTitle>Add New Student</DialogTitle>
               </DialogHeader>
-              <AddStudentForm />
+              {/* Add Student Form Component would go here */}
             </DialogContent>
           </Dialog>
           <Button onClick={handleExportPDF} className="flex items-center gap-2">
@@ -308,15 +235,41 @@ const GradeManagement = () => {
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-6">
             <div>
-              <Label className="text-sm font-medium">Academic Level</Label>
-              <Select value={selectedLevel} onValueChange={setSelectedLevel}>
+              <Label className="text-sm font-medium">Filière</Label>
+              <Select value={selectedFiliere} onValueChange={(value) => {
+                setSelectedFiliere(value);
+                setSelectedLevel('all'); // Reset level when filière changes
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Filière" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Filières</SelectItem>
+                  {FILIERES.map((filiere) => (
+                    <SelectItem key={filiere.id} value={filiere.name}>
+                      {filiere.name} ({filiere.degree})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">Level</Label>
+              <Select 
+                value={selectedLevel} 
+                onValueChange={setSelectedLevel}
+                disabled={selectedFiliere === 'all'}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select Level" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Levels</SelectItem>
-                  {academicLevels.map((level) => (
-                    <SelectItem key={level} value={level}>{level}</SelectItem>
+                  {getAvailableLevels().map((level) => (
+                    <SelectItem key={level} value={level.toString()}>
+                      Level {level}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
