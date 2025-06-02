@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -69,7 +68,7 @@ const ProfessorManagement = () => {
     search: ''
   });
 
-  const departments = ['Informatics', 'Management'];
+  const departments = ['Informatics', 'Management'].filter(dept => dept !== '');
 
   React.useEffect(() => {
     let filtered = professors;

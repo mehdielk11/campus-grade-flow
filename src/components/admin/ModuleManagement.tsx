@@ -79,9 +79,9 @@ const ModuleManagement = () => {
   });
   const { toast } = useToast();
 
-  const departments = ['Informatics', 'Management'];
-  const academicLevels = ['ISI1', 'ISI2', 'ISI3', 'ISI4', 'ISI5', 'MGE1', 'MGE2', 'MGE3', 'MGE4', 'MGE5'];
-  const semesters = ['Semester 1', 'Semester 2'];
+  const departments = ['Informatics', 'Management'].filter(dept => dept !== '');
+  const academicLevels = ['ISI1', 'ISI2', 'ISI3', 'ISI4', 'ISI5', 'MGE1', 'MGE2', 'MGE3', 'MGE4', 'MGE5'].filter(level => level !== '');
+  const semesters = ['Semester 1', 'Semester 2'].filter(semester => semester !== '');
 
   React.useEffect(() => {
     let filtered = modules;
