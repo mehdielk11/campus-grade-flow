@@ -60,7 +60,7 @@ const UserManagement = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filter, setFilter] = useState({ role: '', status: '' });
+  const [filter, setFilter] = useState({ role: 'all', status: 'all' });
 
   const roles = [
     { value: 'super_admin', label: 'Super Admin' },
@@ -76,8 +76,8 @@ const UserManagement = () => {
       user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesRole = !filter.role || user.role === filter.role;
-    const matchesStatus = !filter.status || user.status === filter.status;
+    const matchesRole = filter.role === 'all' || user.role === filter.role;
+    const matchesStatus = filter.status === 'all' || user.status === filter.status;
     
     return matchesSearch && matchesRole && matchesStatus;
   });
@@ -118,7 +118,7 @@ const UserManagement = () => {
   };
 
   const UserForm = () => {
-    const [formData, setFormData] = useState<Partial<User>>(selectedUser || {});
+    const [formData, setFormData] = useState<Partial<User>>(selectedUser || { role: 'student', status: 'Active' });
 
     return (
       <div className="space-y-4">
@@ -153,7 +153,7 @@ const UserManagement = () => {
           <div>
             <Label htmlFor="role">Role</Label>
             <Select
-              value={formData.role || ''}
+              value={formData.role || 'student'}
               onValueChange={(value) => setFormData({ ...formData, role: value as User['role'] })}
             >
               <SelectTrigger>
@@ -171,7 +171,7 @@ const UserManagement = () => {
           <div>
             <Label htmlFor="status">Status</Label>
             <Select
-              value={formData.status || ''}
+              value={formData.status || 'Active'}
               onValueChange={(value) => setFormData({ ...formData, status: value as 'Active' | 'Inactive' })}
             >
               <SelectTrigger>
@@ -239,7 +239,7 @@ const UserManagement = () => {
                 <SelectValue placeholder="Filter by Role" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Roles</SelectItem>
+                <SelectItem value="all">All Roles</SelectItem>
                 {roles.map((role) => (
                   <SelectItem key={role.value} value={role.value}>
                     {role.label}
@@ -256,7 +256,7 @@ const UserManagement = () => {
                 <SelectValue placeholder="Filter by Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Statuses</SelectItem>
+                <SelectItem value="all">All Statuses</SelectItem>
                 {statuses.map((status) => (
                   <SelectItem key={status} value={status}>{status}</SelectItem>
                 ))}
