@@ -1,0 +1,129 @@
+
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { User, AuthState, LoginCredentials } from '@/types/auth';
+
+interface AuthContextType extends AuthState {
+  login: (credentials: LoginCredentials) => Promise<void>;
+  logout: () => void;
+  updateUser: (user: User) => void;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Mock users for demonstration
+const mockUsers: User[] = [
+  {
+    id: '1',
+    email: 'admin@university.edu',
+    firstName: 'Super',
+    lastName: 'Admin',
+    role: 'super_admin',
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01'
+  },
+  {
+    id: '2',
+    email: 'admin.cs@university.edu',
+    firstName: 'John',
+    lastName: 'Smith',
+    role: 'administrator',
+    departmentId: 'cs-dept',
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01'
+  },
+  {
+    id: '3',
+    email: 'prof.johnson@university.edu',
+    firstName: 'Emily',
+    lastName: 'Johnson',
+    role: 'professor',
+    professorId: 'prof-001',
+    departmentId: 'cs-dept',
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01'
+  },
+  {
+    id: '4',
+    email: 'student.doe@university.edu',
+    firstName: 'Jane',
+    lastName: 'Doe',
+    role: 'student',
+    studentId: 'STU-2024-001',
+    departmentId: 'cs-dept',
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01'
+  }
+];
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [authState, setAuthState] = useState<AuthState>({
+    user: null,
+    isLoading: false,
+    isAuthenticated: false
+  });
+
+  useEffect(() => {
+    // Check for existing session
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      const user = JSON.parse(storedUser);
+      setAuthState({
+        user,
+        isLoading: false,
+        isAuthenticated: true
+      });
+    }
+  }, []);
+
+  const login = async (credentials: LoginCredentials) => {
+    setAuthState(prev => ({ ...prev, isLoading: true }));
+    
+    // Simulate API call
+    const user = mockUsers.find(u => u.email === credentials.email);
+    
+    if (user && credentials.password === 'password123') {
+      localStorage.setItem('user', JSON.stringify(user));
+      setAuthState({
+        user,
+        isLoading: false,
+        isAuthenticated: true
+      });
+    } else {
+      setAuthState(prev => ({ ...prev, isLoading: false }));
+      throw new Error('Invalid credentials');
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem('user');
+    setAuthState({
+      user: null,
+      isLoading: false,
+      isAuthenticated: false
+    });
+  };
+
+  const updateUser = (user: User) => {
+    localStorage.setItem('user', JSON.stringify(user));
+    setAuthState(prev => ({ ...prev, user }));
+  };
+
+  return (
+    <AuthContext.Provider value={{
+      ...authState,
+      login,
+      logout,
+      updateUser
+    }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
