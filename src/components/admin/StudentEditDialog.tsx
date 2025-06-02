@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { FILIERES } from '@/types';
 
 interface Student {
   id: string;
@@ -13,8 +14,8 @@ interface Student {
   lastName: string;
   email: string;
   studentId: string;
-  department: string;
-  level: string;
+  filiere: string;
+  level: number;
   semester: string;
   gpa: number;
   status: string;
@@ -59,6 +60,9 @@ const StudentEditDialog = ({ student, isOpen, onClose, onSave }: StudentEditDial
   };
 
   if (!formData) return null;
+
+  const selectedFiliere = FILIERES.find(f => f.name === formData.filiere);
+  const availableLevels = selectedFiliere ? selectedFiliere.levels : [1, 2, 3];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -112,37 +116,43 @@ const StudentEditDialog = ({ student, isOpen, onClose, onSave }: StudentEditDial
 
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="department">Department</Label>
+              <Label htmlFor="filiere">Filière</Label>
               <Select
-                value={formData.department}
-                onValueChange={(value) => setFormData({ ...formData, department: value })}
+                value={formData.filiere}
+                onValueChange={(value) => {
+                  const selectedFil = FILIERES.find(f => f.name === value);
+                  setFormData({ 
+                    ...formData, 
+                    filiere: value,
+                    level: selectedFil ? selectedFil.levels[0] : 1
+                  });
+                }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select Department" />
+                  <SelectValue placeholder="Select Filière" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Informatics">Informatics</SelectItem>
-                  <SelectItem value="Management">Management</SelectItem>
-                  <SelectItem value="Engineering">Engineering</SelectItem>
-                  <SelectItem value="Business">Business</SelectItem>
+                  {FILIERES.map((filiere) => (
+                    <SelectItem key={filiere.id} value={filiere.name}>
+                      {filiere.name} ({filiere.degree})
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
               <Label htmlFor="level">Academic Level</Label>
               <Select
-                value={formData.level}
-                onValueChange={(value) => setFormData({ ...formData, level: value })}
+                value={formData.level.toString()}
+                onValueChange={(value) => setFormData({ ...formData, level: parseInt(value) })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select Level" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ISI3">ISI3</SelectItem>
-                  <SelectItem value="MGE2">MGE2</SelectItem>
-                  <SelectItem value="GI1">GI1</SelectItem>
-                  <SelectItem value="GI2">GI2</SelectItem>
-                  <SelectItem value="GI3">GI3</SelectItem>
+                  {availableLevels.map((level) => (
+                    <SelectItem key={level} value={level.toString()}>Level {level}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

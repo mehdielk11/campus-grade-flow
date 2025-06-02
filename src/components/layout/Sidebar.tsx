@@ -33,7 +33,7 @@ import { useMediaQuery } from '@/hooks/use-media-query';
 import { Link as RouterLink } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
-const Sidebar = ({ isCollapsed }: SidebarProps) => {
+const Sidebar = ({ isCollapsed, onToggle }: SidebarProps & { onToggle?: () => void }) => {
   const { user, logout } = useAuth();
   const [open, setOpen] = React.useState(false);
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -66,7 +66,7 @@ const Sidebar = ({ isCollapsed }: SidebarProps) => {
 
   const renderSidebarContent = () => (
     <div className="flex flex-col h-full">
-      <div className="flex items-center px-4 py-6">
+      <div className="flex items-center justify-between px-4 py-6">
         <RouterLink to="/profile" className="flex items-center gap-2">
           <Avatar className="w-8 h-8">
             <AvatarImage src="https://github.com/shadcn.png" alt="Avatar" />
@@ -76,6 +76,11 @@ const Sidebar = ({ isCollapsed }: SidebarProps) => {
             {user?.firstName} {user?.lastName}
           </span>
         </RouterLink>
+        {!isMobile && onToggle && (
+          <Button variant="ghost" size="sm" onClick={onToggle} className="p-1.5">
+            <Menu className="h-4 w-4" />
+          </Button>
+        )}
       </div>
       <ScrollArea className="flex-1 px-3">
         <div className="space-y-1">
@@ -123,7 +128,7 @@ const Sidebar = ({ isCollapsed }: SidebarProps) => {
   }
 
   return (
-    <div className={`flex flex-col w-64 border-r border-r-muted shrink-0 transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
+    <div className={`flex flex-col border-r border-r-muted shrink-0 transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
       {renderSidebarContent()}
     </div>
   );

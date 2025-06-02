@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2, UserCheck, Search, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { FILIERES } from '@/types';
 
 interface Professor {
   id: string;
@@ -19,7 +19,7 @@ interface Professor {
   lastName: string;
   email: string;
   employeeId: string;
-  department: string;
+  filiere: string;
   specialization: string;
   status: 'Active' | 'Inactive' | 'On Leave';
   hireDate: string;
@@ -36,7 +36,7 @@ const ProfessorManagement = () => {
       lastName: 'Smith',
       email: 'jane.smith@university.edu',
       employeeId: 'PROF001',
-      department: 'Computer Science',
+      filiere: 'IISI',
       specialization: 'Machine Learning',
       status: 'Active',
       hireDate: '2020-08-15',
@@ -48,7 +48,7 @@ const ProfessorManagement = () => {
       lastName: 'Doe',
       email: 'john.doe@university.edu',
       employeeId: 'PROF002',
-      department: 'Mathematics',
+      filiere: 'MGE',
       specialization: 'Applied Mathematics',
       status: 'Active',
       hireDate: '2019-01-10',
@@ -59,11 +59,10 @@ const ProfessorManagement = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedProfessor, setSelectedProfessor] = useState<Professor | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filter, setFilter] = useState({ department: 'all', status: 'all' });
+  const [filter, setFilter] = useState({ filiere: 'all', status: 'all' });
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
 
-  const departments = ['Computer Science', 'Mathematics', 'Physics', 'Engineering'];
   const statuses = ['Active', 'Inactive', 'On Leave'];
 
   const filteredProfessors = professors.filter(professor => {
@@ -73,10 +72,10 @@ const ProfessorManagement = () => {
       professor.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       professor.employeeId.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesDepartment = filter.department === 'all' || professor.department === filter.department;
+    const matchesFiliere = filter.filiere === 'all' || professor.filiere === filter.filiere;
     const matchesStatus = filter.status === 'all' || professor.status === filter.status;
     
-    return matchesSearch && matchesDepartment && matchesStatus;
+    return matchesSearch && matchesFiliere && matchesStatus;
   });
 
   const handleSave = (professorData: Partial<Professor>) => {
@@ -107,7 +106,7 @@ const ProfessorManagement = () => {
 
   const ProfessorForm = () => {
     const [formData, setFormData] = useState<Partial<Professor>>(selectedProfessor || { 
-      department: departments[0], 
+      filiere: FILIERES[0].name, 
       status: 'Active',
       password: ''
     });
@@ -155,17 +154,19 @@ const ProfessorManagement = () => {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="department">Department</Label>
+            <Label htmlFor="filiere">Filière</Label>
             <Select
-              value={formData.department || departments[0]}
-              onValueChange={(value) => setFormData({ ...formData, department: value })}
+              value={formData.filiere || FILIERES[0].name}
+              onValueChange={(value) => setFormData({ ...formData, filiere: value })}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select department" />
+                <SelectValue placeholder="Select filière" />
               </SelectTrigger>
               <SelectContent>
-                {departments.map((dept) => (
-                  <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                {FILIERES.map((filiere) => (
+                  <SelectItem key={filiere.id} value={filiere.name}>
+                    {filiere.name} ({filiere.degree})
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -301,16 +302,16 @@ const ProfessorManagement = () => {
             </div>
             
             <Select
-              value={filter.department}
-              onValueChange={(value) => setFilter({ ...filter, department: value })}
+              value={filter.filiere}
+              onValueChange={(value) => setFilter({ ...filter, filiere: value })}
             >
               <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Filter by Department" />
+                <SelectValue placeholder="Filter by Filière" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Departments</SelectItem>
-                {departments.map((dept) => (
-                  <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                <SelectItem value="all">All Filières</SelectItem>
+                {FILIERES.map((filiere) => (
+                  <SelectItem key={filiere.id} value={filiere.name}>{filiere.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -338,7 +339,7 @@ const ProfessorManagement = () => {
                   <TableHead>Employee ID</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Department</TableHead>
+                  <TableHead>Filière</TableHead>
                   <TableHead>Specialization</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
@@ -350,7 +351,7 @@ const ProfessorManagement = () => {
                     <TableCell className="font-medium">{professor.employeeId}</TableCell>
                     <TableCell>{professor.firstName} {professor.lastName}</TableCell>
                     <TableCell>{professor.email}</TableCell>
-                    <TableCell>{professor.department}</TableCell>
+                    <TableCell>{professor.filiere}</TableCell>
                     <TableCell>{professor.specialization}</TableCell>
                     <TableCell>
                       <Badge variant={professor.status === 'Active' ? 'default' : 'secondary'}>

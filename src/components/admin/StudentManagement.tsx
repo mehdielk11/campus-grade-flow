@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2, GraduationCap, Search, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { FILIERES } from '@/types';
 
 interface Student {
   id: string;
@@ -18,8 +19,8 @@ interface Student {
   lastName: string;
   email: string;
   studentId: string;
-  department: string;
-  year: number;
+  filiere: string;
+  level: number;
   gpa: number;
   status: 'Active' | 'Inactive' | 'Graduated';
   enrollmentDate: string;
@@ -36,8 +37,8 @@ const StudentManagement = () => {
       lastName: 'Johnson',
       email: 'STU001@supmti.ma',
       studentId: 'STU001',
-      department: 'Computer Science',
-      year: 3,
+      filiere: 'IISI',
+      level: 3,
       gpa: 3.8,
       status: 'Active',
       enrollmentDate: '2022-09-01',
@@ -49,8 +50,8 @@ const StudentManagement = () => {
       lastName: 'Smith',
       email: 'STU002@supmti.ma',
       studentId: 'STU002',
-      department: 'Mathematics',
-      year: 2,
+      filiere: 'MGE',
+      level: 2,
       gpa: 3.6,
       status: 'Active',
       enrollmentDate: '2023-09-01',
@@ -61,13 +62,12 @@ const StudentManagement = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filter, setFilter] = useState({ department: 'all', year: 'all', status: 'all' });
+  const [filter, setFilter] = useState({ filiere: 'all', level: 'all', status: 'all' });
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
 
-  const departments = ['Computer Science', 'Mathematics', 'Physics', 'Engineering'];
-  const years = [1, 2, 3, 4];
   const statuses = ['Active', 'Inactive', 'Graduated'];
+  const allLevels = [1, 2, 3, 4, 5];
 
   const filteredStudents = students.filter(student => {
     const matchesSearch = !searchTerm || 
@@ -76,11 +76,11 @@ const StudentManagement = () => {
       student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.studentId.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesDepartment = filter.department === 'all' || student.department === filter.department;
-    const matchesYear = filter.year === 'all' || student.year.toString() === filter.year;
+    const matchesFiliere = filter.filiere === 'all' || student.filiere === filter.filiere;
+    const matchesLevel = filter.level === 'all' || student.level.toString() === filter.level;
     const matchesStatus = filter.status === 'all' || student.status === filter.status;
     
-    return matchesSearch && matchesDepartment && matchesYear && matchesStatus;
+    return matchesSearch && matchesFiliere && matchesLevel && matchesStatus;
   });
 
   const handleSave = (studentData: Partial<Student>) => {
@@ -111,11 +111,14 @@ const StudentManagement = () => {
 
   const StudentForm = () => {
     const [formData, setFormData] = useState<Partial<Student>>(selectedStudent || { 
-      department: departments[0], 
-      year: 1, 
+      filiere: FILIERES[0].name, 
+      level: 1, 
       status: 'Active',
       password: ''
     });
+
+    const selectedFiliere = FILIERES.find(f => f.name === formData.filiere);
+    const availableLevels = selectedFiliere ? selectedFiliere.levels : [1, 2, 3];
 
     return (
       <div className="space-y-4">
@@ -160,33 +163,42 @@ const StudentManagement = () => {
 
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <Label htmlFor="department">Department</Label>
+            <Label htmlFor="filiere">Filière</Label>
             <Select
-              value={formData.department || departments[0]}
-              onValueChange={(value) => setFormData({ ...formData, department: value })}
+              value={formData.filiere || FILIERES[0].name}
+              onValueChange={(value) => {
+                const selectedFil = FILIERES.find(f => f.name === value);
+                setFormData({ 
+                  ...formData, 
+                  filiere: value,
+                  level: selectedFil ? selectedFil.levels[0] : 1
+                });
+              }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select department" />
+                <SelectValue placeholder="Select filière" />
               </SelectTrigger>
               <SelectContent>
-                {departments.map((dept) => (
-                  <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                {FILIERES.map((filiere) => (
+                  <SelectItem key={filiere.id} value={filiere.name}>
+                    {filiere.name} ({filiere.degree})
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div>
-            <Label htmlFor="year">Year</Label>
+            <Label htmlFor="level">Level</Label>
             <Select
-              value={formData.year?.toString() || '1'}
-              onValueChange={(value) => setFormData({ ...formData, year: parseInt(value) })}
+              value={formData.level?.toString() || '1'}
+              onValueChange={(value) => setFormData({ ...formData, level: parseInt(value) })}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select year" />
+                <SelectValue placeholder="Select level" />
               </SelectTrigger>
               <SelectContent>
-                {years.map((year) => (
-                  <SelectItem key={year} value={year.toString()}>Year {year}</SelectItem>
+                {availableLevels.map((level) => (
+                  <SelectItem key={level} value={level.toString()}>Level {level}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -316,31 +328,31 @@ const StudentManagement = () => {
             </div>
             
             <Select
-              value={filter.department}
-              onValueChange={(value) => setFilter({ ...filter, department: value })}
+              value={filter.filiere}
+              onValueChange={(value) => setFilter({ ...filter, filiere: value })}
             >
               <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Filter by Department" />
+                <SelectValue placeholder="Filter by Filière" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Departments</SelectItem>
-                {departments.map((dept) => (
-                  <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                <SelectItem value="all">All Filières</SelectItem>
+                {FILIERES.map((filiere) => (
+                  <SelectItem key={filiere.id} value={filiere.name}>{filiere.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
             
             <Select
-              value={filter.year}
-              onValueChange={(value) => setFilter({ ...filter, year: value })}
+              value={filter.level}
+              onValueChange={(value) => setFilter({ ...filter, level: value })}
             >
               <SelectTrigger className="w-full sm:w-32">
-                <SelectValue placeholder="Year" />
+                <SelectValue placeholder="Level" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Years</SelectItem>
-                {years.map((year) => (
-                  <SelectItem key={year} value={year.toString()}>Year {year}</SelectItem>
+                <SelectItem value="all">All Levels</SelectItem>
+                {allLevels.map((level) => (
+                  <SelectItem key={level} value={level.toString()}>Level {level}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -368,8 +380,8 @@ const StudentManagement = () => {
                   <TableHead>Student ID</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Department</TableHead>
-                  <TableHead>Year</TableHead>
+                  <TableHead>Filière</TableHead>
+                  <TableHead>Level</TableHead>
                   <TableHead>GPA</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
@@ -381,8 +393,8 @@ const StudentManagement = () => {
                     <TableCell className="font-medium">{student.studentId}</TableCell>
                     <TableCell>{student.firstName} {student.lastName}</TableCell>
                     <TableCell>{student.email}</TableCell>
-                    <TableCell>{student.department}</TableCell>
-                    <TableCell>Year {student.year}</TableCell>
+                    <TableCell>{student.filiere}</TableCell>
+                    <TableCell>Level {student.level}</TableCell>
                     <TableCell>{student.gpa.toFixed(1)}</TableCell>
                     <TableCell>
                       <Badge variant={student.status === 'Active' ? 'default' : 'secondary'}>
