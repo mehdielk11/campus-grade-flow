@@ -4,11 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Building2, Plus, Edit, Trash2, Users } from 'lucide-react';
+import { Plus, Edit, Trash2, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface Department {
@@ -18,302 +17,269 @@ interface Department {
   description: string;
   head: string;
   studentCount: number;
-  facultyCount: number;
-  establishedYear: string;
+  status: 'active' | 'inactive';
 }
 
 const mockDepartments: Department[] = [
   {
     id: '1',
-    name: 'Computer Science',
-    code: 'CS',
-    description: 'Department of Computer Science and Information Technology',
+    name: 'Computer Science & Informatics',
+    code: 'CSI',
+    description: 'Department of Computer Science and Information Systems',
     head: 'Dr. John Smith',
-    studentCount: 245,
-    facultyCount: 18,
-    establishedYear: '1995'
+    studentCount: 250,
+    status: 'active'
   },
   {
     id: '2',
-    name: 'Business Management',
-    code: 'BM',
-    description: 'Department of Business Administration and Management',
+    name: 'Management & Economics',
+    code: 'MGE',
+    description: 'Department of Management and Economic Sciences',
     head: 'Dr. Sarah Johnson',
-    studentCount: 312,
-    facultyCount: 22,
-    establishedYear: '1988'
-  },
-  {
-    id: '3',
-    name: 'Mathematics',
-    code: 'MATH',
-    description: 'Department of Mathematics and Statistics',
-    head: 'Dr. Michael Brown',
-    studentCount: 128,
-    facultyCount: 12,
-    establishedYear: '1975'
+    studentCount: 180,
+    status: 'active'
   }
 ];
 
 const DepartmentManagement = () => {
-  const { toast } = useToast();
-  const [departments, setDepartments] = useState(mockDepartments);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
+  const [departments, setDepartments] = useState<Department[]>(mockDepartments);
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     code: '',
     description: '',
     head: '',
-    establishedYear: ''
+    status: 'active' as 'active' | 'inactive'
   });
+  const { toast } = useToast();
 
-  const handleAddDepartment = () => {
-    setEditingDepartment(null);
-    setFormData({
-      name: '',
-      code: '',
-      description: '',
-      head: '',
-      establishedYear: ''
+  const handleAdd = () => {
+    if (!formData.name || !formData.code) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newDepartment: Department = {
+      id: Date.now().toString(),
+      name: formData.name,
+      code: formData.code,
+      description: formData.description,
+      head: formData.head,
+      studentCount: 0,
+      status: formData.status
+    };
+
+    setDepartments([...departments, newDepartment]);
+    setFormData({ name: '', code: '', description: '', head: '', status: 'active' });
+    setIsAddingNew(false);
+    
+    toast({
+      title: "Department Added",
+      description: "New department has been successfully created.",
     });
-    setIsDialogOpen(true);
   };
 
-  const handleEditDepartment = (department: Department) => {
-    setEditingDepartment(department);
+  const handleEdit = (department: Department) => {
+    setEditingId(department.id);
     setFormData({
       name: department.name,
       code: department.code,
       description: department.description,
       head: department.head,
-      establishedYear: department.establishedYear
+      status: department.status
     });
-    setIsDialogOpen(true);
   };
 
-  const handleSaveDepartment = () => {
-    if (editingDepartment) {
-      setDepartments(prev => prev.map(dept => 
-        dept.id === editingDepartment.id 
-          ? { ...dept, ...formData }
-          : dept
-      ));
+  const handleUpdate = () => {
+    if (!formData.name || !formData.code) {
       toast({
-        title: "Department updated",
-        description: "Department information has been successfully updated.",
+        title: "Validation Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
       });
-    } else {
-      const newDepartment: Department = {
-        id: Date.now().toString(),
-        ...formData,
-        studentCount: 0,
-        facultyCount: 0
-      };
-      setDepartments(prev => [...prev, newDepartment]);
-      toast({
-        title: "Department created",
-        description: "New department has been successfully created.",
-      });
+      return;
     }
-    setIsDialogOpen(false);
+
+    setDepartments(departments.map(dept => 
+      dept.id === editingId 
+        ? { ...dept, ...formData }
+        : dept
+    ));
+    
+    setEditingId(null);
+    setFormData({ name: '', code: '', description: '', head: '', status: 'active' });
+    
+    toast({
+      title: "Department Updated",
+      description: "Department information has been successfully updated.",
+    });
   };
 
-  const handleDeleteDepartment = (id: string) => {
-    setDepartments(prev => prev.filter(dept => dept.id !== id));
+  const handleDelete = (id: string) => {
+    setDepartments(departments.filter(dept => dept.id !== id));
     toast({
-      title: "Department deleted",
+      title: "Department Deleted",
       description: "Department has been successfully removed.",
-      variant: "destructive"
     });
+  };
+
+  const resetForm = () => {
+    setFormData({ name: '', code: '', description: '', head: '', status: 'active' });
+    setIsAddingNew(false);
+    setEditingId(null);
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Department Management</h2>
+          <h1 className="text-3xl font-bold">Department Management</h1>
           <p className="text-gray-600">Manage university departments and their information</p>
         </div>
-        <Button onClick={handleAddDepartment} className="flex items-center gap-2">
+        <Button onClick={() => setIsAddingNew(true)} className="flex items-center gap-2">
           <Plus className="h-4 w-4" />
           Add Department
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {(isAddingNew || editingId) && (
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Building2 className="h-5 w-5" />
-              Total Departments
+          <CardHeader>
+            <CardTitle>
+              {isAddingNew ? 'Add New Department' : 'Edit Department'}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-blue-600">{departments.length}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Total Students
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-600">
-              {departments.reduce((sum, dept) => sum + dept.studentCount, 0)}
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Department Name *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Enter department name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="code">Department Code *</Label>
+                <Input
+                  id="code"
+                  value={formData.code}
+                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                  placeholder="Enter department code"
+                />
+              </div>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Total Faculty</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-purple-600">
-              {departments.reduce((sum, dept) => sum + dept.facultyCount, 0)}
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="head">Department Head</Label>
+                <Input
+                  id="head"
+                  value={formData.head}
+                  onChange={(e) => setFormData({ ...formData, head: e.target.value })}
+                  placeholder="Enter department head name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select value={formData.status} onValueChange={(value: 'active' | 'inactive') => setFormData({ ...formData, status: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Departments Overview</CardTitle>
-          <CardDescription>All departments in the university system</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Department</TableHead>
-                <TableHead>Code</TableHead>
-                <TableHead>Department Head</TableHead>
-                <TableHead>Students</TableHead>
-                <TableHead>Faculty</TableHead>
-                <TableHead>Established</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {departments.map(department => (
-                <TableRow key={department.id}>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{department.name}</div>
-                      <div className="text-sm text-gray-500">{department.description}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{department.code}</Badge>
-                  </TableCell>
-                  <TableCell>{department.head}</TableCell>
-                  <TableCell>
-                    <div className="font-semibold text-blue-600">{department.studentCount}</div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="font-semibold text-green-600">{department.facultyCount}</div>
-                  </TableCell>
-                  <TableCell>{department.establishedYear}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => handleEditDepartment(department)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => handleDeleteDepartment(department.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              {editingDepartment ? 'Edit Department' : 'Add New Department'}
-            </DialogTitle>
-            <DialogDescription>
-              {editingDepartment 
-                ? 'Update the department information below'
-                : 'Fill in the details to create a new department'
-              }
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Department Name</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., Computer Science"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="code">Department Code</Label>
-              <Input
-                id="code"
-                value={formData.code}
-                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                placeholder="e.g., CS"
-              />
-            </div>
-            <div className="space-y-2 col-span-2">
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Department description..."
+                placeholder="Enter department description"
                 rows={3}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="head">Department Head</Label>
-              <Input
-                id="head"
-                value={formData.head}
-                onChange={(e) => setFormData({ ...formData, head: e.target.value })}
-                placeholder="e.g., Dr. John Smith"
-              />
+
+            <div className="flex gap-3">
+              <Button onClick={isAddingNew ? handleAdd : handleUpdate}>
+                {isAddingNew ? 'Add Department' : 'Update Department'}
+              </Button>
+              <Button variant="outline" onClick={resetForm}>
+                Cancel
+              </Button>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="year">Established Year</Label>
-              <Input
-                id="year"
-                value={formData.establishedYear}
-                onChange={(e) => setFormData({ ...formData, establishedYear: e.target.value })}
-                placeholder="e.g., 1995"
-              />
-            </div>
-          </div>
-          <div className="flex justify-end gap-3 mt-6">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveDepartment}>
-              {editingDepartment ? 'Update' : 'Create'} Department
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {departments.map((department) => (
+          <Card key={department.id} className="hover:shadow-lg transition-shadow">
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-blue-100 p-2 rounded-lg">
+                    <Building2 className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">{department.name}</CardTitle>
+                    <CardDescription>{department.code}</CardDescription>
+                  </div>
+                </div>
+                <Badge variant={department.status === 'active' ? 'default' : 'secondary'}>
+                  {department.status}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-gray-600">{department.description}</p>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Department Head:</span>
+                  <span className="font-medium">{department.head}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Students:</span>
+                  <span className="font-medium">{department.studentCount}</span>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleEdit(department)}
+                  className="flex items-center gap-1"
+                >
+                  <Edit className="h-3 w-3" />
+                  Edit
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDelete(department.id)}
+                  className="flex items-center gap-1 text-red-600 hover:text-red-700"
+                >
+                  <Trash2 className="h-3 w-3" />
+                  Delete
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 };

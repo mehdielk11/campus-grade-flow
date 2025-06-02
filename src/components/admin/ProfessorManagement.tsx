@@ -1,319 +1,278 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, UserCheck } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Users, Search, Filter, UserCheck, BookOpen } from 'lucide-react';
 
 interface Professor {
   id: string;
+  employeeId: string;
   firstName: string;
   lastName: string;
   email: string;
   department: string;
-  phone: string;
   specialization: string;
-  status: 'Active' | 'Inactive';
-  assignedCourses: string[];
+  modules: string[];
+  status: 'active' | 'inactive' | 'on_leave';
+  joinDate: string;
 }
 
+const mockProfessors: Professor[] = [
+  {
+    id: '1',
+    employeeId: 'EMP001',
+    firstName: 'John',
+    lastName: 'Smith',
+    email: 'john.smith@university.edu',
+    department: 'Informatics',
+    specialization: 'Computer Science',
+    modules: ['CS101', 'CS201', 'CS301'],
+    status: 'active',
+    joinDate: '2020-09-01'
+  },
+  {
+    id: '2',
+    employeeId: 'EMP002',
+    firstName: 'Sarah',
+    lastName: 'Johnson',
+    email: 'sarah.johnson@university.edu',
+    department: 'Management',
+    specialization: 'Business Administration',
+    modules: ['MGE101', 'MGE201'],
+    status: 'active',
+    joinDate: '2019-08-15'
+  },
+  {
+    id: '3',
+    employeeId: 'EMP003',
+    firstName: 'Michael',
+    lastName: 'Brown',
+    email: 'michael.brown@university.edu',
+    department: 'Informatics',
+    specialization: 'Data Science',
+    modules: ['CS401'],
+    status: 'on_leave',
+    joinDate: '2021-01-10'
+  }
+];
+
 const ProfessorManagement = () => {
-  const { toast } = useToast();
-  const [professors, setProfessors] = useState<Professor[]>([
-    {
-      id: '1',
-      firstName: 'John',
-      lastName: 'Smith',
-      email: 'j.smith@university.edu',
-      department: 'Informatics',
-      phone: '+1234567890',
-      specialization: 'Data Structures & Algorithms',
-      status: 'Active',
-      assignedCourses: ['Data Structures', 'Algorithms']
-    },
-    {
-      id: '2',
-      firstName: 'Sarah',
-      lastName: 'Johnson',
-      email: 's.johnson@university.edu',
-      department: 'Informatics',
-      phone: '+1234567891',
-      specialization: 'Database Systems',
-      status: 'Active',
-      assignedCourses: ['Database Systems', 'SQL Fundamentals']
-    },
-    {
-      id: '3',
-      firstName: 'Michael',
-      lastName: 'Brown',
-      email: 'm.brown@university.edu',
-      department: 'Management',
-      phone: '+1234567892',
-      specialization: 'Strategic Management',
-      status: 'Active',
-      assignedCourses: ['Marketing', 'Business Strategy']
-    }
-  ]);
-
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedProfessor, setSelectedProfessor] = useState<Professor | null>(null);
-  const [filter, setFilter] = useState({ department: '', status: '' });
-
-  const departments = ['Informatics', 'Management'];
-  const statuses = ['Active', 'Inactive'];
-
-  const filteredProfessors = professors.filter(professor => {
-    const matchesDepartment = !filter.department || professor.department === filter.department;
-    const matchesStatus = !filter.status || professor.status === filter.status;
-    return matchesDepartment && matchesStatus;
+  const [professors] = useState<Professor[]>(mockProfessors);
+  const [filteredProfessors, setFilteredProfessors] = useState<Professor[]>(mockProfessors);
+  const [filters, setFilters] = useState({
+    department: 'all',
+    status: 'all',
+    search: ''
   });
 
-  const handleSave = (professorData: Partial<Professor>) => {
-    if (selectedProfessor) {
-      setProfessors(professors.map(p => 
-        p.id === selectedProfessor.id ? { ...p, ...professorData } : p
-      ));
-      toast({ title: "Professor updated successfully" });
-    } else {
-      const newProfessor = { 
-        id: Date.now().toString(), 
-        assignedCourses: [],
-        ...professorData 
-      } as Professor;
-      setProfessors([...professors, newProfessor]);
-      toast({ title: "Professor added successfully" });
+  const departments = ['Informatics', 'Management'];
+
+  React.useEffect(() => {
+    let filtered = professors;
+
+    if (filters.department !== 'all') {
+      filtered = filtered.filter(professor => professor.department === filters.department);
     }
-    setIsDialogOpen(false);
-    setSelectedProfessor(null);
+
+    if (filters.status !== 'all') {
+      filtered = filtered.filter(professor => professor.status === filters.status);
+    }
+
+    if (filters.search) {
+      filtered = filtered.filter(professor =>
+        professor.firstName.toLowerCase().includes(filters.search.toLowerCase()) ||
+        professor.lastName.toLowerCase().includes(filters.search.toLowerCase()) ||
+        professor.email.toLowerCase().includes(filters.search.toLowerCase()) ||
+        professor.employeeId.toLowerCase().includes(filters.search.toLowerCase()) ||
+        professor.specialization.toLowerCase().includes(filters.search.toLowerCase())
+      );
+    }
+
+    setFilteredProfessors(filtered);
+  }, [filters, professors]);
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'bg-green-100 text-green-800';
+      case 'inactive':
+        return 'bg-red-100 text-red-800';
+      case 'on_leave':
+        return 'bg-yellow-100 text-yellow-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setProfessors(professors.filter(p => p.id !== id));
-    toast({ title: "Professor deleted successfully" });
-  };
-
-  const ProfessorForm = () => {
-    const [formData, setFormData] = useState<Partial<Professor>>(selectedProfessor || {});
-
-    return (
-      <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="firstName">First Name</Label>
-            <Input
-              id="firstName"
-              value={formData.firstName || ''}
-              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-            />
-          </div>
-          <div>
-            <Label htmlFor="lastName">Last Name</Label>
-            <Input
-              id="lastName"
-              value={formData.lastName || ''}
-              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-            />
-          </div>
-        </div>
-        <div>
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            value={formData.email || ''}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="department">Department</Label>
-            <Select
-              value={formData.department || ''}
-              onValueChange={(value) => setFormData({ ...formData, department: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select department" />
-              </SelectTrigger>
-              <SelectContent>
-                {departments.map((dept) => (
-                  <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label htmlFor="phone">Phone</Label>
-            <Input
-              id="phone"
-              value={formData.phone || ''}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            />
-          </div>
-        </div>
-        <div>
-          <Label htmlFor="specialization">Specialization</Label>
-          <Input
-            id="specialization"
-            value={formData.specialization || ''}
-            onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
-          />
-        </div>
-        <div>
-          <Label htmlFor="status">Status</Label>
-          <Select
-            value={formData.status || ''}
-            onValueChange={(value) => setFormData({ ...formData, status: value as 'Active' | 'Inactive' })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select status" />
-            </SelectTrigger>
-            <SelectContent>
-              {statuses.map((status) => (
-                <SelectItem key={status} value={status}>{status}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <Button onClick={() => handleSave(formData)} className="w-full">
-          {selectedProfessor ? 'Update Professor' : 'Add Professor'}
-        </Button>
-      </div>
-    );
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'on_leave':
+        return 'On Leave';
+      default:
+        return status.charAt(0).toUpperCase() + status.slice(1);
+    }
   };
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Professor Management</h1>
+          <p className="text-gray-600">Manage faculty members and their academic information</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Badge variant="outline" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            {filteredProfessors.length} Professors
+          </Badge>
+        </div>
+      </div>
+
+      {/* Filters */}
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle className="flex items-center gap-2">
-              <UserCheck className="h-5 w-5" />
-              Professor Management
-            </CardTitle>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={() => setSelectedProfessor(null)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Professor
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>
-                    {selectedProfessor ? 'Edit Professor' : 'Add New Professor'}
-                  </DialogTitle>
-                </DialogHeader>
-                <ProfessorForm />
-              </DialogContent>
-            </Dialog>
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Filters
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4 mb-4">
-            <Select
-              value={filter.department}
-              onValueChange={(value) => setFilter({ ...filter, department: value })}
-            >
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filter by Department" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">All Departments</SelectItem>
-                {departments.map((dept) => (
-                  <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            <Select
-              value={filter.status}
-              onValueChange={(value) => setFilter({ ...filter, status: value })}
-            >
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filter by Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">All Statuses</SelectItem>
-                {statuses.map((status) => (
-                  <SelectItem key={status} value={status}>{status}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <Label>Search</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search professors..."
+                  className="pl-10"
+                  value={filters.search}
+                  onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                />
+              </div>
+            </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Specialization</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Courses</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredProfessors.map((professor) => (
-                <TableRow key={professor.id}>
-                  <TableCell className="font-medium">
-                    {professor.firstName} {professor.lastName}
-                  </TableCell>
-                  <TableCell>{professor.email}</TableCell>
-                  <TableCell>{professor.department}</TableCell>
-                  <TableCell>{professor.specialization}</TableCell>
-                  <TableCell>
-                    <Badge variant={professor.status === 'Active' ? 'default' : 'secondary'}>
-                      {professor.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {professor.assignedCourses.slice(0, 2).map((course, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {course}
-                        </Badge>
-                      ))}
-                      {professor.assignedCourses.length > 2 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{professor.assignedCourses.length - 2} more
-                        </Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedProfessor(professor);
-                          setIsDialogOpen(true);
-                        }}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete(professor.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+            <div className="space-y-2">
+              <Label>Department</Label>
+              <Select value={filters.department} onValueChange={(value) => setFilters({ ...filters, department: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Departments" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Departments</SelectItem>
+                  {departments.map(dept => (
+                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={filters.status} onValueChange={(value) => setFilters({ ...filters, status: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="on_leave">On Leave</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>&nbsp;</Label>
+              <Button 
+                variant="outline" 
+                onClick={() => setFilters({ department: 'all', status: 'all', search: '' })}
+                className="w-full"
+              >
+                Clear Filters
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
+
+      {/* Professors Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredProfessors.map((professor) => (
+          <Card key={professor.id} className="hover:shadow-lg transition-shadow">
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-green-100 p-2 rounded-lg">
+                    <UserCheck className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">
+                      {professor.firstName} {professor.lastName}
+                    </CardTitle>
+                    <CardDescription>{professor.employeeId}</CardDescription>
+                  </div>
+                </div>
+                <Badge className={getStatusColor(professor.status)}>
+                  {getStatusLabel(professor.status)}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Email:</span>
+                  <span className="font-medium text-xs">{professor.email}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Department:</span>
+                  <span className="font-medium">{professor.department}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Specialization:</span>
+                  <span className="font-medium">{professor.specialization}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Join Date:</span>
+                  <span className="font-medium">{new Date(professor.joinDate).toLocaleDateString()}</span>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-gray-500 text-sm">Modules:</span>
+                  <div className="flex flex-wrap gap-1">
+                    {professor.modules.map((module) => (
+                      <Badge key={module} variant="outline" className="text-xs">
+                        {module}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-3">
+                <Button variant="outline" size="sm" className="flex-1">
+                  View Details
+                </Button>
+                <Button variant="outline" size="sm" className="flex-1">
+                  Edit
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {filteredProfessors.length === 0 && (
+        <Card>
+          <CardContent className="text-center py-8">
+            <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-600 mb-2">No professors found</h3>
+            <p className="text-gray-500">Try adjusting your filters to see more results.</p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
