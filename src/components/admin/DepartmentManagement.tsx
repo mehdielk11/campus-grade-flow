@@ -19,10 +19,12 @@ const DepartmentManagement = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
+    code: '',
     formation: 'Management et Finance' as 'Management et Finance' | 'Ingénierie',
     degree: 'BAC+3' as 'BAC+3' | 'BAC+5',
     levels: [] as number[],
   });
+  const [codeError, setCodeError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const formations = ['Management et Finance', 'Ingénierie'] as const;
@@ -34,7 +36,7 @@ const DepartmentManagement = () => {
   }, [fetchFilieres]);
 
   const handleAdd = async () => {
-    if (!formData.name || !formData.formation || !formData.degree || !formData.levels || formData.levels.length === 0) {
+    if (!formData.name || !formData.code || !formData.formation || !formData.degree || !formData.levels || formData.levels.length === 0) {
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields.",
@@ -42,32 +44,35 @@ const DepartmentManagement = () => {
       });
       return;
     }
-    const code = (formData.name.match(/[A-Z]+/g)?.join('') || formData.name.replace(/[^A-Za-z0-9]/g, '').substring(0, 4).toUpperCase()) + (formData.degree === 'BAC+3' ? '3' : '5');
+    if (filieres.some(f => f.code.toLowerCase() === formData.code.toLowerCase())) {
+      setCodeError('Code must be unique.');
+      toast({ title: 'Validation Error', description: 'Code must be unique.', variant: 'destructive' });
+      return;
+    }
+    setCodeError(null);
     await addFiliere({
       ...formData,
-      code,
       formation: formData.formation as 'Management et Finance' | 'Ingénierie',
       degree: formData.degree as 'BAC+3' | 'BAC+5',
     });
     resetForm();
-    toast({
-      title: "Filière Added",
-      description: "New filière has been successfully created.",
-    });
+    await fetchFilieres();
   };
 
   const handleEdit = (filiere) => {
     setEditingId(filiere.id);
     setFormData({
       name: filiere.name,
+      code: filiere.code,
       formation: filiere.formation as 'Management et Finance' | 'Ingénierie',
       degree: filiere.degree as 'BAC+3' | 'BAC+5',
       levels: filiere.levels || [],
     });
+    setCodeError(null);
   };
 
   const handleUpdate = async () => {
-    if (!editingId || !formData.formation || !formData.degree || !formData.levels || formData.levels.length === 0) {
+    if (!editingId || !formData.code || !formData.formation || !formData.degree || !formData.levels || formData.levels.length === 0) {
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields.",
@@ -75,19 +80,22 @@ const DepartmentManagement = () => {
       });
       return;
     }
-    const { name, ...updateData } = formData;
-    const code = (formData.name.match(/[A-Z]+/g)?.join('') || formData.name.replace(/[^A-Za-z0-9]/g, '').substring(0, 4).toUpperCase()) + (formData.degree === 'BAC+3' ? '3' : '5');
+    if (filieres.some(f => f.code.toLowerCase() === formData.code.toLowerCase() && f.id !== editingId)) {
+      setCodeError('Code must be unique.');
+      toast({ title: 'Validation Error', description: 'Code must be unique.', variant: 'destructive' });
+      return;
+    }
+    setCodeError(null);
+    const { name, code, ...updateData } = formData;
     await updateFiliere(editingId, {
       ...updateData,
-      code,
+      name: formData.name,
       formation: formData.formation as 'Management et Finance' | 'Ingénierie',
       degree: formData.degree as 'BAC+3' | 'BAC+5',
+      code: formData.code,
     });
     resetForm();
-    toast({
-      title: "Filière Updated",
-      description: "Filière information has been successfully updated.",
-    });
+    await fetchFilieres();
   };
 
   const handleDelete = async (id: string, filiereName: string) => {
@@ -99,17 +107,28 @@ const DepartmentManagement = () => {
   };
 
   const resetForm = () => {
-    setFormData({ name: '', formation: 'Management et Finance', degree: 'BAC+3', levels: [] });
+    setFormData({ name: '', code: '', formation: 'Management et Finance', degree: 'BAC+3', levels: [] });
     setIsAddingNew(false);
     setEditingId(null);
   };
 
   const handleLevelToggle = (level: number) => {
+    if ((formData.degree === 'BAC+3' && (level === 4 || level === 5)) || (formData.degree === 'BAC+5' && (level === 1 || level === 2 || level === 3))) {
+      return;
+    }
     const updatedLevels = formData.levels.includes(level)
       ? formData.levels.filter(l => l !== level)
       : [...formData.levels, level];
     setFormData({ ...formData, levels: updatedLevels.sort((a, b) => a - b) });
   };
+
+  useEffect(() => {
+    if (formData.degree === 'BAC+3') {
+      setFormData((prev) => ({ ...prev, levels: prev.levels.filter(l => l >= 1 && l <= 3) }));
+    } else if (formData.degree === 'BAC+5') {
+      setFormData((prev) => ({ ...prev, levels: prev.levels.filter(l => l >= 4 && l <= 5) }));
+    }
+  }, [formData.degree]);
 
   return (
     <div className="space-y-6">
@@ -143,9 +162,22 @@ const DepartmentManagement = () => {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Enter filière name"
-                  disabled={!!editingId}
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="code">Code *</Label>
+                <Input
+                  id="code"
+                  value={formData.code}
+                  onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+                  placeholder="Enter unique code"
+                  maxLength={16}
+                  required
+                />
+                {codeError && <div className="text-red-500 text-sm mt-1">{codeError}</div>}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="formation">Formation *</Label>
                 <Select
@@ -164,8 +196,6 @@ const DepartmentManagement = () => {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="degree">Degree *</Label>
                 <Select
@@ -182,19 +212,26 @@ const DepartmentManagement = () => {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Levels *</Label>
                 <div className="flex flex-wrap gap-2">
-                  {allLevels.map((level) => (
-                    <Button
-                      key={level}
-                      variant={formData.levels.includes(level) ? 'default' : 'outline'}
-                      onClick={() => handleLevelToggle(level)}
-                      size="sm"
-                    >
-                      Level {level}
-                    </Button>
-                  ))}
+                  {[1, 2, 3, 4, 5].map((level) => {
+                    const isDisabled = (formData.degree === 'BAC+3' && (level === 4 || level === 5)) || (formData.degree === 'BAC+5' && (level === 1 || level === 2 || level === 3));
+                    return (
+                      <Button
+                        key={level}
+                        variant={formData.levels.includes(level) ? 'default' : 'outline'}
+                        onClick={() => handleLevelToggle(level)}
+                        size="sm"
+                        disabled={isDisabled}
+                        style={isDisabled ? { opacity: 0.5, pointerEvents: 'none' } : {}}
+                      >
+                        Level {level}
+                      </Button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -226,6 +263,7 @@ const DepartmentManagement = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
+                    <TableHead>Code</TableHead>
                     <TableHead>Formation</TableHead>
                     <TableHead>Degree</TableHead>
                     <TableHead>Levels</TableHead>
@@ -236,6 +274,7 @@ const DepartmentManagement = () => {
                   {filieres.map((filiere) => (
                     <TableRow key={filiere.id}>
                       <TableCell className="font-medium">{filiere.name}</TableCell>
+                      <TableCell>{filiere.code}</TableCell>
                       <TableCell>{filiere.formation}</TableCell>
                       <TableCell>{filiere.degree}</TableCell>
                       <TableCell>{filiere.levels?.join(', ')}</TableCell>
@@ -282,3 +321,4 @@ const DepartmentManagement = () => {
 };
 
 export default DepartmentManagement;
+

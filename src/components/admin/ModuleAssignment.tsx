@@ -70,7 +70,7 @@ const ModuleAssignment = () => {
   });
   const { toast } = useToast();
 
-  const filieres = ['MGE', 'MDI', 'FACG', 'MRI', 'IISI', 'IISRT'];
+  const filieres = ['MGE', 'MDI', 'FACG', 'MRI', 'IISI3', 'IISI5', 'IISRT'];
   const levels = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'];
   const semesters = ['Semester 1', 'Semester 2'];
 

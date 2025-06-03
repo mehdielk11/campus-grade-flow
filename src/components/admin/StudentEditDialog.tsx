@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -132,9 +131,9 @@ const StudentEditDialog = ({ student, isOpen, onClose, onSave }: StudentEditDial
                   <SelectValue placeholder="Select Filière" />
                 </SelectTrigger>
                 <SelectContent>
-                  {FILIERES.map((filiere) => (
-                    <SelectItem key={filiere.id} value={filiere.name}>
-                      {filiere.name} ({filiere.degree})
+                  {FILIERES.filter(filiere => filiere.code === 'IISI3' || filiere.code === 'IISI5' || !filiere.code.startsWith('IISI') || filiere.code === 'IISRT5').map((filiere) => (
+                    <SelectItem key={filiere.id} value={filiere.code}>
+                      {filiere.code}
                     </SelectItem>
                   ))}
                 </SelectContent>

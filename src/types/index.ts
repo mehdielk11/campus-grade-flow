@@ -18,8 +18,8 @@ export const FILIERES: Filiere[] = [
   { id: 'mdi', code: 'MDI3', name: 'MDI', formation: 'Management et Finance', degree: 'BAC+3', levels: [1, 2, 3] },
   { id: 'facg', code: 'FACG4', name: 'FACG', formation: 'Management et Finance', degree: 'BAC+5', levels: [4, 5] },
   { id: 'mri', code: 'MRI5', name: 'MRI', formation: 'Management et Finance', degree: 'BAC+5', levels: [4, 5] },
-  { id: 'iisi3', code: 'IISI3', name: 'IISI (BAC+3)', formation: 'Ingénierie', degree: 'BAC+3', levels: [1, 2, 3] },
-  { id: 'iisi5', code: 'IISI5', name: 'IISI (BAC+5)', formation: 'Ingénierie', degree: 'BAC+5', levels: [4, 5] },
+  { id: 'iisi3', code: 'IISI3', name: 'IISI3', formation: 'Ingénierie', degree: 'BAC+3', levels: [1, 2, 3] },
+  { id: 'iisi5', code: 'IISI5', name: 'IISI5', formation: 'Ingénierie', degree: 'BAC+5', levels: [4, 5] },
   { id: 'iisrt', code: 'IISRT5', name: 'IISRT', formation: 'Ingénierie', degree: 'BAC+5', levels: [4, 5] },
 ];
 

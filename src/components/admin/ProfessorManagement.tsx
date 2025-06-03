@@ -54,7 +54,7 @@ const ProfessorManagement = () => {
       await updateProfessor(selectedProfessor.id, updatePayload);
       toast({ title: "Professor updated successfully" });
     } else {
-      if (!dataToSave.first_name || !dataToSave.last_name || !dataToSave.email || !dataToSave.professor_id || !dataToSave.department || !dataToSave.status || !dataToSave.filieres || dataToSave.filieres.length === 0) {
+      if (!dataToSave.first_name || !dataToSave.last_name || !dataToSave.email || !dataToSave.professor_id || !dataToSave.status || !dataToSave.filieres || dataToSave.filieres.length === 0) {
         toast({ title: "Missing required fields", variant: "destructive" });
         return;
       }
@@ -81,7 +81,6 @@ const ProfessorManagement = () => {
       last_name: '',
       email: '',
       professor_id: '',
-      department: '',
     });
     const [filiereDropdownOpen, setFiliereDropdownOpen] = useState(false);
 
@@ -99,7 +98,6 @@ const ProfessorManagement = () => {
           last_name: '',
           email: '',
           professor_id: '',
-          department: '',
         });
       }
     }, [selectedProfessor]);
@@ -190,36 +188,28 @@ const ProfessorManagement = () => {
               </button>
               {filiereDropdownOpen && (
                 <div className="absolute z-10 mt-1 w-full rounded-md border bg-white shadow-lg max-h-60 overflow-auto">
-                  {FILIERES.map((filiere) => (
+                  {FILIERES.filter(filiere => filiere.code === 'IISI3' || filiere.code === 'IISI5' || !filiere.code.startsWith('IISI') || filiere.code === 'IISRT5').map((filiere) => (
                     <label key={filiere.id} className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={formData.filieres?.includes(filiere.name) || false}
+                        checked={formData.filieres?.includes(filiere.code) || false}
                         onChange={(e) => {
                           const checked = e.target.checked;
                           setFormData((prev) => ({
                             ...prev,
                             filieres: checked
-                              ? [...(prev.filieres || []), filiere.name]
-                              : (prev.filieres || []).filter((f) => f !== filiere.name),
+                              ? [...(prev.filieres || []), filiere.code]
+                              : (prev.filieres || []).filter((f) => f !== filiere.code),
                           }));
                         }}
                         className="mr-2"
                       />
-                      {filiere.name.startsWith('IISI') ? filiere.name : filiere.name.replace(/ \(BAC\+3\)| \(BAC\+5\)/g, '')}
+                      {filiere.code}
                     </label>
                   ))}
                 </div>
               )}
             </div>
-          </div>
-          <div>
-            <Label htmlFor="department">Department</Label>
-            <Input
-              id="department"
-              value={formData.department || ''}
-              onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-            />
           </div>
         </div>
 
@@ -352,7 +342,6 @@ const ProfessorManagement = () => {
                       <TableHead>Professor ID</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Email</TableHead>
-                      <TableHead>Department</TableHead>
                       <TableHead>Filière(s)</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -364,7 +353,6 @@ const ProfessorManagement = () => {
                         <TableCell>{professor.professor_id}</TableCell>
                         <TableCell>{professor.first_name} {professor.last_name}</TableCell>
                         <TableCell>{professor.email}</TableCell>
-                        <TableCell>{professor.department || 'N/A'}</TableCell>
                         <TableCell>{professor.filieres?.join(', ') || 'N/A'}</TableCell>
                         <TableCell>
                           <Badge variant={professor.status === 'Active' ? 'default' : 'secondary'}>{professor.status}</Badge>

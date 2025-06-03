@@ -61,11 +61,17 @@ const GradeManagement = () => {
   // Use filieres context as the source of truth for filiere options
   const filiereOptions = useMemo(() => {
     if (filieres && filieres.length > 0) {
-      return filieres.map(f => f.code).filter(Boolean);
+      // Get all codes, filter as before, then sort so 'IISI3' is just above 'IISI5'
+      const codes = filieres.map(f => f.code).filter(code => code === 'IISI3' || code === 'IISI5' || !code.startsWith('IISI') || code === 'IISRT5');
+      // Remove 'IISI3' and 'IISI5' from the array, then add them in the desired order
+      const rest = codes.filter(code => code !== 'IISI3' && code !== 'IISI5');
+      return [...rest, 'IISI3', 'IISI5'];
     }
     // fallback: get unique codes from grades if filieres is empty
     const codes = grades.map(g => g.modules?.filiere).filter(Boolean);
-    return Array.from(new Set(codes));
+    const filtered = Array.from(new Set(codes)).filter(code => code === 'IISI3' || code === 'IISI5' || !code.startsWith('IISI') || code === 'IISRT5');
+    const rest = filtered.filter(code => code !== 'IISI3' && code !== 'IISI5');
+    return [...rest, 'IISI3', 'IISI5'];
   }, [filieres, grades]);
 
   const getAvailableLevels = useMemo(() => () => {
@@ -81,31 +87,24 @@ const GradeManagement = () => {
     let filtered = grades;
 
     if (selectedFiliere !== 'all') {
+      // Only include grades where the student's filiere matches the selected filiere
       filtered = filtered.filter(grade => {
-        const moduleFiliere = grade.modules?.filiere;
         const studentFiliere = grade.students?.filiere;
         return (
-          (moduleFiliere && (
-            moduleFiliere === selectedFiliere ||
-            moduleFiliere.toUpperCase() === selectedFiliere.toUpperCase() ||
-            moduleFiliere.toLowerCase() === selectedFiliere.toLowerCase()
-          )) ||
-          (studentFiliere && (
+          studentFiliere && (
             studentFiliere === selectedFiliere ||
             studentFiliere.toUpperCase() === selectedFiliere.toUpperCase() ||
             studentFiliere.toLowerCase() === selectedFiliere.toLowerCase()
-          ))
+          )
         );
       });
     }
 
     if (selectedLevel !== 'all') {
-      // Filter by academic level stored in the module object related to the grade
       filtered = filtered.filter(grade => grade.modules?.academic_level === `Level ${selectedLevel}`);
     }
 
     if (selectedSemester !== 'all') {
-      // Filter by semester stored in the module object related to the grade
       filtered = filtered.filter(grade => grade.modules?.semester === selectedSemester);
     }
 
@@ -113,11 +112,7 @@ const GradeManagement = () => {
       filtered = filtered.filter(grade => grade.module_id === selectedModuleId);
     }
 
-    // Get unique student IDs from the filtered grades to display each student once
     const uniqueStudentIds = Array.from(new Set(filtered.map(grade => grade.student_id))).filter(id => id !== undefined);
-    
-    // Return grades only for the unique students who have grades matching the filtered criteria
-    // This ensures each student row shows only their grades for the filtered criteria
     return grades.filter(grade => uniqueStudentIds.includes(grade.student_id));
   }, [grades, selectedFiliere, selectedLevel, selectedSemester, selectedModuleId]);
 

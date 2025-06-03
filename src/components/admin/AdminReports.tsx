@@ -14,7 +14,7 @@ const AdminReports = () => {
   const [selectedDepartment, setSelectedDepartment] = useState('all');
   const [selectedSemester, setSelectedSemester] = useState('all');
 
-  const departments = FILIERES.map(filiere => filiere.name);
+  const departments = FILIERES.filter(filiere => filiere.code === 'IISI3' || filiere.code === 'IISI5' || !filiere.code.startsWith('IISI') || filiere.code === 'IISRT5').map(filiere => filiere.code);
   const semesters = ['Semester 1', 'Semester 2'];
 
   const enrollmentData = [

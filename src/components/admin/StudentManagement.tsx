@@ -57,8 +57,8 @@ const StudentManagement = () => {
 
   // Helper: Get unique filiere codes from students if filieres array is empty or mismatched
   const filiereOptions = filieres.length > 0
-    ? Array.from(new Set(filieres.map(f => f.code))).filter(Boolean)
-    : Array.from(new Set(students.map(s => s.filiere))).filter(Boolean);
+    ? Array.from(new Set(filieres.map(f => f.code))).filter(code => code === 'IISI3' || code === 'IISI5' || !code.startsWith('IISI') || code === 'IISRT5')
+    : Array.from(new Set(students.map(s => s.filiere))).filter(code => code === 'IISI3' || code === 'IISI5' || !code.startsWith('IISI') || code === 'IISRT5');
 
   const handleSave = async (studentData: Partial<Student>) => {
     const { id, created_at, updated_at, ...dataToSave } = studentData;

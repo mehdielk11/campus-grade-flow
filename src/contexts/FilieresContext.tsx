@@ -9,7 +9,7 @@ interface FilieresContextType {
   error: string | null;
   fetchFilieres: (limit?: number, offset?: number) => Promise<void>;
   addFiliere: (filiereData: Omit<Filiere, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
-  updateFiliere: (id: string, filiereData: Partial<Omit<Filiere, 'id' | 'created_at' | 'updated_at' | 'code' | 'name'>>) => Promise<void>; // Exclude unique fields from update
+  updateFiliere: (id: string, filiereData: Partial<Omit<Filiere, 'id' | 'created_at' | 'updated_at'>>) => Promise<void>; // Allow updating name
   deleteFiliere: (id: string) => Promise<void>;
 }
 
@@ -74,8 +74,8 @@ export const FilieresProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  // Exclude unique fields (name, code) from update to avoid conflicts
-  const updateFiliere = async (id: string, filiereData: Partial<Omit<Filiere, 'id' | 'created_at' | 'updated_at' | 'code' | 'name'>>) => {
+  // Allow updating all fields except id, created_at, updated_at
+  const updateFiliere = async (id: string, filiereData: Partial<Omit<Filiere, 'id' | 'created_at' | 'updated_at'>>) => {
     const { data, error } = await supabase.from('filieres').update(filiereData).eq('id', id).select();
 
     if (error) {
