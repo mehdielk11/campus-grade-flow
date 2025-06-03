@@ -229,7 +229,7 @@ const GradeReports = () => {
                         outerRadius={80}
                         fill="#8884d8"
                         dataKey="count"
-                        label={({ range, percentage }) => `${range}: ${percentage}%`}
+                        label={({ range, percentage }) => percentage > 0 ? `${range}: ${percentage}%` : ''}
                       >
                         {gradeDistributionData.map((_, index) => (
                           <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />
