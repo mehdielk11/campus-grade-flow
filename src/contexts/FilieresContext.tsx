@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
-import { Filiere } from '@/types';
+import { Filiere, FILIERES } from '@/types';
 
 interface FilieresContextType {
   filieres: Filiere[];
@@ -16,32 +16,42 @@ interface FilieresContextType {
 const FilieresContext = createContext<FilieresContextType | undefined>(undefined);
 
 export const FilieresProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [filieres, setFilieres] = useState<Filiere[]>([]);
+  const [filieres, setFilieres] = useState<Filiere[]>(FILIERES);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchFilieres = async () => {
     setIsLoading(true);
-    const { data, error } = await supabase.from('filieres').select('*');
-
-    if (error) {
-      console.error('Error fetching filieres:', error);
-      setError('Failed to fetch filieres.');
-      toast({ title: 'Error', description: 'Failed to fetch filieres.', variant: 'destructive' });
-      setFilieres([]);
-    } else if (data) {
-      const typedFilieres: Filiere[] = data.map((item: any) => ({
-        id: item.id,
-        name: item.name,
-        formation: item.formation,
-        degree: item.degree,
-        levels: item.levels,
-      }));
-      setFilieres(typedFilieres);
-      setError(null);
+    try {
+      const { data, error } = await supabase.from('filieres').select('*');
+      if (error) {
+        console.error('Error fetching filieres:', error);
+        setError('Failed to fetch filieres.');
+        toast({ title: 'Error', description: 'Failed to fetch filieres.', variant: 'destructive' });
+      } else if (data) {
+        try {
+          const typedFilieres: Filiere[] = data.map((item: any) => ({
+            id: item.id,
+            code: item.code || '',
+            name: item.name,
+            formation: item.formation,
+            degree: item.degree,
+            levels: item.levels,
+          }));
+          setFilieres(typedFilieres);
+          setError(null);
+        } catch (mapErr) {
+          console.error('Error mapping filieres:', mapErr);
+          setError('Failed to process filieres data.');
+        }
+      }
+    } catch (err) {
+      console.error('Unexpected error fetching filieres:', err);
+      setError('Unexpected error fetching filieres.');
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const addFiliere = async (filiereData: Omit<Filiere, 'id' | 'created_at' | 'updated_at'>) => {

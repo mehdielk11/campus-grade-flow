@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, AuthState, LoginCredentials } from '@/types/auth';
+import bcrypt from 'bcryptjs';
+import { supabase } from '@/lib/supabase';
 
 interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
@@ -151,6 +153,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         // For other users, use 'password123'
         validPassword = credentials.password === 'password123';
+      }
+    }
+
+    // Custom professor login (from DB)
+    if (!user) {
+      // Query professors table by email
+      const { data, error } = await supabase
+        .from('professors')
+        .select('*')
+        .eq('email', credentials.email)
+        .single();
+      if (!error && data) {
+        // Compare password using bcryptjs
+        if (data.password && bcrypt.compareSync(credentials.password, data.password)) {
+          // Build a user object for session
+          user = {
+            id: data.id,
+            email: data.email,
+            firstName: data.first_name,
+            lastName: data.last_name,
+            role: 'professor',
+            professorId: data.professor_id,
+            departmentId: data.department,
+            createdAt: data.created_at,
+            updatedAt: data.updated_at
+          };
+          validPassword = true;
+        }
       }
     }
     

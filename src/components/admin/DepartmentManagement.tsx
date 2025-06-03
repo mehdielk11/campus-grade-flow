@@ -42,8 +42,10 @@ const DepartmentManagement = () => {
       });
       return;
     }
+    const code = (formData.name.match(/[A-Z]+/g)?.join('') || formData.name.replace(/[^A-Za-z0-9]/g, '').substring(0, 4).toUpperCase()) + (formData.degree === 'BAC+3' ? '3' : '5');
     await addFiliere({
       ...formData,
+      code,
       formation: formData.formation as 'Management et Finance' | 'Ingénierie',
       degree: formData.degree as 'BAC+3' | 'BAC+5',
     });
@@ -74,8 +76,10 @@ const DepartmentManagement = () => {
       return;
     }
     const { name, ...updateData } = formData;
+    const code = (formData.name.match(/[A-Z]+/g)?.join('') || formData.name.replace(/[^A-Za-z0-9]/g, '').substring(0, 4).toUpperCase()) + (formData.degree === 'BAC+3' ? '3' : '5');
     await updateFiliere(editingId, {
       ...updateData,
+      code,
       formation: formData.formation as 'Management et Finance' | 'Ingénierie',
       degree: formData.degree as 'BAC+3' | 'BAC+5',
     });
@@ -212,7 +216,7 @@ const DepartmentManagement = () => {
           <CardDescription>{filieres.length} total filières</CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {filieres.length === 0 && isLoading ? (
             <div>Loading filières...</div>
           ) : error ? (
             <div className="text-red-500">Error loading filières: {error}</div>

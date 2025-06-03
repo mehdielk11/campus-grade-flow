@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase'; // Assuming you have a supabase client initialized here
 import { useToast } from '@/hooks/use-toast';
+import bcrypt from 'bcryptjs';
 
 // Define the Professor interface based on your schema
 export interface Professor {
@@ -14,6 +15,7 @@ export interface Professor {
   status: 'Active' | 'Inactive' | 'On Leave';
   specialization?: string; // Added specialization
   hire_date?: string; // Added hire_date (assuming string format for now)
+  password?: string; // Add password field
   created_at: string; // Or Date type
   updated_at: string; // Or Date type
 }
@@ -38,8 +40,8 @@ export const ProfessorsProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const fetchProfessors = useCallback(async () => {
     setIsLoading(true);
-    // Explicitly select professor_id, filiere_ids and fallback to employee_id if needed
-    const { data, error } = await supabase.from('professors').select('*, professor_id, filiere_ids');
+    // Explicitly select professor_id, filiere_ids, password and fallback to employee_id if needed
+    const { data, error } = await supabase.from('professors').select('*, professor_id, filiere_ids, password');
 
     if (error) {
       console.error('Error fetching professors:', error);
@@ -61,8 +63,12 @@ export const ProfessorsProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const addProfessor = async (professorData: Omit<Professor, 'id' | 'created_at' | 'updated_at'>) => {
     // Map filieres to filiere_ids for Supabase
-    const { filieres, ...rest } = professorData;
-    const payload = { ...rest, filiere_ids: filieres };
+    const { filieres, password, ...rest } = professorData;
+    let hashedPassword = password;
+    if (password) {
+      hashedPassword = bcrypt.hashSync(password, 10);
+    }
+    const payload = { ...rest, filiere_ids: filieres, password: hashedPassword };
     const { data, error } = await supabase.from('professors').insert([payload]).select();
 
     if (error) {
@@ -80,8 +86,14 @@ export const ProfessorsProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const updateProfessor = async (id: string, professorData: Partial<Omit<Professor, 'id' | 'created_at' | 'updated_at' | 'email' | 'professor_id'>>) => {
     // Map filieres to filiere_ids for Supabase
-    const { filieres, ...rest } = professorData;
-    const payload = filieres !== undefined ? { ...rest, filiere_ids: filieres } : rest;
+    const { filieres, password, ...rest } = professorData;
+    let hashedPassword = password;
+    if (password) {
+      hashedPassword = bcrypt.hashSync(password, 10);
+    }
+    const payload = filieres !== undefined
+      ? { ...rest, filiere_ids: filieres, ...(password ? { password: hashedPassword } : {}) }
+      : { ...rest, ...(password ? { password: hashedPassword } : {}) };
     const { data, error } = await supabase.from('professors').update(payload).eq('id', id).select();
 
     if (error) {

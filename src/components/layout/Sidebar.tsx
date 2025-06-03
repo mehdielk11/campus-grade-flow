@@ -44,7 +44,7 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps & { onToggle?: () => vo
   const navigationItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     ...(user?.role === 'administrator' || user?.role === 'super_admin' ? [
-      { name: 'Reports', href: '/reports', icon: BarChart },
+    { name: 'Reports', href: '/reports', icon: BarChart },
     ] : []),
     ...(user?.role === 'administrator' || user?.role === 'super_admin' ? [
       { name: 'Filières', href: '/departments', icon: Building },
@@ -107,7 +107,7 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps & { onToggle?: () => vo
           <Button variant="outline" size="sm" className="w-full flex items-center gap-2" onClick={logout}>
             <LogOut className="h-4 w-4" />
             {state !== 'collapsed' && <span>Logout</span>}
-          </Button>
+        </Button>
         </div>
       </div>
     </div>

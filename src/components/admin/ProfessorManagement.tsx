@@ -50,14 +50,16 @@ const ProfessorManagement = () => {
 
     if (selectedProfessor) {
       const { email, professor_id, ...updateData } = dataToSave;
-      await updateProfessor(selectedProfessor.id, updateData);
+      const updatePayload = canManagePasswords ? updateData : { ...updateData, password: undefined };
+      await updateProfessor(selectedProfessor.id, updatePayload);
       toast({ title: "Professor updated successfully" });
     } else {
       if (!dataToSave.first_name || !dataToSave.last_name || !dataToSave.email || !dataToSave.professor_id || !dataToSave.department || !dataToSave.status || !dataToSave.filieres || dataToSave.filieres.length === 0) {
         toast({ title: "Missing required fields", variant: "destructive" });
         return;
       }
-      await addProfessor(dataToSave as Omit<Professor, 'id' | 'created_at' | 'updated_at'>);
+      const addPayload = canManagePasswords ? dataToSave : { ...dataToSave, password: undefined };
+      await addProfessor(addPayload as Omit<Professor, 'id' | 'created_at' | 'updated_at'>);
       toast({ title: "Professor created successfully" });
     }
     setIsDialogOpen(false);
@@ -69,7 +71,7 @@ const ProfessorManagement = () => {
     toast({ title: `Professor "${professorName}" deleted successfully` });
   };
 
-  const canManagePasswords = false;
+  const canManagePasswords = currentUser?.role === 'super_admin' || currentUser?.role === 'administrator';
 
   const ProfessorForm = () => {
     const [formData, setFormData] = useState<Partial<Professor>>(selectedProfessor || { 
@@ -122,7 +124,32 @@ const ProfessorManagement = () => {
             />
           </div>
         </div>
-        
+        {/* Password fields for Super-Admin/Administrator */}
+        {canManagePasswords && (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showNewPassword ? 'text' : 'password'}
+                  value={formData.password || ''}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  className="absolute right-2 top-2 text-gray-500"
+                  onClick={() => setShowNewPassword((v) => !v)}
+                  tabIndex={-1}
+                >
+                  {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+            <div />
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label htmlFor="professorId">Professor ID</Label>
