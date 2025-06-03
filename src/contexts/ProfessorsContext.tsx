@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase'; // Assuming you have a supabase client initialized here
 import { useToast } from '@/hooks/use-toast';
 
@@ -36,7 +36,7 @@ export const ProfessorsProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const fetchProfessors = async () => {
+  const fetchProfessors = useCallback(async () => {
     setIsLoading(true);
     const { data, error } = await supabase.from('professors').select('*');
 
@@ -50,7 +50,7 @@ export const ProfessorsProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setError(null);
     }
     setIsLoading(false);
-  };
+  }, [toast]);
 
   const addProfessor = async (professorData: Omit<Professor, 'id' | 'created_at' | 'updated_at'>) => {
     const { data, error } = await supabase.from('professors').insert([professorData]).select();
@@ -97,7 +97,7 @@ export const ProfessorsProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   useEffect(() => {
     fetchProfessors();
-  }, []); // Fetch professors on initial mount
+  }, [fetchProfessors]); // Fetch professors on initial mount
 
   return (
     <ProfessorsContext.Provider value={{
