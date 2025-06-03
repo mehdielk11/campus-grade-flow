@@ -79,8 +79,8 @@ const GradeReports = () => {
 
   const calculateStats = () => {
     const totalStudents = moduleGrades.length;
-    const averageGrade = moduleGrades.length > 0 ? Math.round(moduleGrades.reduce((sum, g) => sum + (g.overall ?? 0), 0) / moduleGrades.length) : 0;
-    const passRate = moduleGrades.length > 0 ? Math.round((moduleGrades.filter(g => (g.overall ?? 0) >= 60).length / moduleGrades.length) * 100) : 0;
+    const averageGrade = moduleGrades.length > 0 ? (moduleGrades.reduce((sum, g) => sum + (g.module_grade ?? 0), 0) / moduleGrades.length) : 0;
+    const passRate = moduleGrades.length > 0 ? Math.round((moduleGrades.filter(g => (g.module_grade ?? 0) >= 10).length / moduleGrades.length) * 100) : 0;
     return { totalStudents, averageGrade, passRate };
   };
   const stats = calculateStats();
@@ -124,7 +124,7 @@ const GradeReports = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-600">{stats.averageGrade}%</div>
+            <div className="text-3xl font-bold text-green-600">{stats.averageGrade.toFixed(1)}</div>
           </CardContent>
         </Card>
         <Card>
@@ -140,16 +140,14 @@ const GradeReports = () => {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Letter Grade</CardTitle>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <BarChart className="h-5 w-5" />
+              Modules Assigned
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-orange-600">{
-              stats.averageGrade >= 90 ? 'A' :
-              stats.averageGrade >= 80 ? 'B' :
-              stats.averageGrade >= 70 ? 'C' :
-              stats.averageGrade >= 60 ? 'D' : 'F'
-            }</div>
-            <p className="text-sm text-gray-500">Class Average</p>
+            <div className="text-3xl font-bold text-indigo-600">{professorModules.length}</div>
+            
           </CardContent>
         </Card>
       </div>

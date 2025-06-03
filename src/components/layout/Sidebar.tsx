@@ -50,7 +50,6 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps & { onToggle?: () => vo
       { name: 'Grades', href: '/grades', icon: BarChart },
       { name: 'Filières', href: '/departments', icon: Building },
       { name: 'Modules', href: '/modules', icon: BookOpen },
-      { name: 'Module Assignment', href: '/module-assignment', icon: Link },
       { name: 'Students', href: '/students', icon: Users },
       { name: 'Professors', href: '/professors', icon: UserCheck },
     ] : []),
