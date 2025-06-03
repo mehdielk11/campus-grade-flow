@@ -47,9 +47,9 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps & { onToggle?: () => vo
     { name: 'Reports', href: '/reports', icon: BarChart },
     ] : []),
     ...(user?.role === 'administrator' || user?.role === 'super_admin' ? [
+      { name: 'Grades', href: '/grades', icon: BarChart },
       { name: 'Filières', href: '/departments', icon: Building },
       { name: 'Modules', href: '/modules', icon: BookOpen },
-      { name: 'Grades', href: '/grades', icon: BarChart },
       { name: 'Module Assignment', href: '/module-assignment', icon: Link },
       { name: 'Students', href: '/students', icon: Users },
       { name: 'Professors', href: '/professors', icon: UserCheck },
@@ -59,7 +59,6 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps & { onToggle?: () => vo
       { name: 'Grade Entry', href: '/grade-entry', icon: Edit },
     ] : []),
     ...(user?.role === 'student' ? [
-      { name: 'Grades', href: '/grades', icon: BarChart },
       { name: 'Transcripts', href: '/transcripts', icon: FileText },
       { name: 'Profile', href: '/profile', icon: User },
     ] : []),

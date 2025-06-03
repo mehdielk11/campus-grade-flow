@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { FILIERES } from '@/types';
 import { useProfessors, Professor } from '@/contexts/ProfessorsContext';
+import { nanoid } from 'nanoid';
 
 const ProfessorManagement = () => {
   const { toast } = useToast();
@@ -81,14 +82,19 @@ const ProfessorManagement = () => {
       last_name: '',
       email: '',
       professor_id: '',
+      password: '',
     });
     const [filiereDropdownOpen, setFiliereDropdownOpen] = useState(false);
+    const [idError, setIdError] = useState<string | null>(null);
+    const [showPassword, setShowPassword] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
       if (selectedProfessor) {
         setFormData({
           ...selectedProfessor,
           filieres: selectedProfessor.filieres || [],
+          password: '',
         });
       } else {
          setFormData({ 
@@ -98,9 +104,47 @@ const ProfessorManagement = () => {
           last_name: '',
           email: '',
           professor_id: '',
+          password: '',
         });
       }
     }, [selectedProfessor]);
+
+    // Close filiere dropdown on click outside
+    useEffect(() => {
+      if (!filiereDropdownOpen) return;
+      function handleClickOutside(event: MouseEvent) {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+          setFiliereDropdownOpen(false);
+        }
+      }
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [filiereDropdownOpen]);
+
+    // Helper to generate a unique Professor ID
+    const generateProfessorId = () => {
+      let newId;
+      do {
+        newId = 'PROF-' + nanoid(8).toUpperCase();
+      } while (professors.some(p => p.professor_id === newId));
+      setFormData({ ...formData, professor_id: newId });
+      setIdError(null);
+    };
+
+    // Helper to generate a secure password
+    const generatePassword = () => {
+      const length = 12;
+      const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+      let password = '';
+      while (true) {
+        password = Array.from({ length }, () => charset[Math.floor(Math.random() * charset.length)]).join('');
+        // Ensure password has at least one lowercase, one uppercase, one number, one symbol
+        if (/[a-z]/.test(password) && /[A-Z]/.test(password) && /[0-9]/.test(password) && /[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/.test(password)) {
+          break;
+        }
+      }
+      setFormData({ ...formData, password });
+    };
 
     return (
       <div className="space-y-4">
@@ -122,27 +166,52 @@ const ProfessorManagement = () => {
             />
           </div>
         </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email || ''}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            />
+          </div>
+          <div />
+        </div>
         {/* Password fields for Super-Admin/Administrator */}
         {canManagePasswords && (
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showNewPassword ? 'text' : 'password'}
-                  value={formData.password || ''}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  autoComplete="new-password"
-                />
-                <button
+              <div className="flex gap-2 items-center">
+                <div className="relative w-full">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={formData.password || ''}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    autoComplete="new-password"
+                    className="pr-12"
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 p-0 h-7 w-7 flex items-center justify-center"
+                    onClick={() => setShowPassword((v) => !v)}
+                    tabIndex={-1}
+                    style={{ background: 'none', border: 'none' }}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                <Button
                   type="button"
-                  className="absolute right-2 top-2 text-gray-500"
-                  onClick={() => setShowNewPassword((v) => !v)}
-                  tabIndex={-1}
+                  variant="outline"
+                  className="h-10 px-4 py-2"
+                  onClick={generatePassword}
+                  style={{ minWidth: 0 }}
                 >
-                  {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
+                  Generate
+                </Button>
               </div>
             </div>
             <div />
@@ -151,29 +220,25 @@ const ProfessorManagement = () => {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label htmlFor="professorId">Professor ID</Label>
-            <Input
-              id="professorId"
-              value={formData.professor_id || ''}
-              onChange={(e) => setFormData({ ...formData, professor_id: e.target.value })}
-              disabled={!!selectedProfessor}
-            />
-          </div>
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email || ''}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              disabled={!!selectedProfessor}
-            />
+            <div className="flex gap-2">
+              <Input
+                id="professorId"
+                value={formData.professor_id || ''}
+                onChange={(e) => setFormData({ ...formData, professor_id: e.target.value })}
+                disabled={!!selectedProfessor}
+              />
+              {!selectedProfessor && (
+                <Button type="button" variant="outline" onClick={generateProfessorId}>Generate</Button>
+              )}
+            </div>
+            {idError && <div className="text-red-500 text-sm mt-1">{idError}</div>}
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label htmlFor="filiere">Filière(s)</Label>
-            <div className="relative">
+            <div className="relative" ref={dropdownRef}>
               <button
                 type="button"
                 className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm"

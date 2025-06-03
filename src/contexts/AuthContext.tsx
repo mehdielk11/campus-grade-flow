@@ -183,6 +183,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
     }
+
+    // Custom student login (from DB)
+    if (!user) {
+      let studentQuery;
+      if (credentials.email.includes('@')) {
+        studentQuery = supabase
+          .from('students')
+          .select('*')
+          .eq('email', credentials.email)
+          .single();
+      } else {
+        // Try by student_id (code)
+        studentQuery = supabase
+          .from('students')
+          .select('*')
+          .eq('student_id', credentials.email)
+          .single();
+      }
+      const { data: student, error: studentError } = await studentQuery;
+      if (!studentError && student) {
+        if (student.password && bcrypt.compareSync(credentials.password, student.password)) {
+          user = {
+            id: student.id,
+            email: student.email,
+            firstName: student.first_name,
+            lastName: student.last_name,
+            role: 'student',
+            studentId: student.student_id,
+            createdAt: student.created_at,
+            updatedAt: student.updated_at
+          };
+          validPassword = true;
+        }
+      }
+    }
     
     if (user && validPassword) {
       localStorage.setItem('user', JSON.stringify(user));

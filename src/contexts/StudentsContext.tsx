@@ -56,7 +56,12 @@ export const StudentsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [toast]);
 
   const addStudent = async (studentData: Omit<Student, 'id' | 'created_at' | 'updated_at'>) => {
-    const { data, error } = await supabase.from('students').insert([studentData]).select();
+    let dataToInsert = { ...studentData };
+    if ((dataToInsert as any).password) {
+      const bcrypt = await import('bcryptjs');
+      (dataToInsert as any).password = bcrypt.hashSync((dataToInsert as any).password, 10);
+    }
+    const { data, error } = await supabase.from('students').insert([dataToInsert]).select();
 
     if (error) {
       console.error('Error adding student:', error);
