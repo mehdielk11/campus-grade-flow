@@ -1,12 +1,11 @@
-
 import React from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import GradeViewer from '@/components/student/GradeViewer';
+import GradeManagement from '@/components/admin/GradeManagement';
 
 const Grades = () => {
   return (
     <DashboardLayout>
-      <GradeViewer />
+      <GradeManagement />
     </DashboardLayout>
   );
 };
