@@ -38,8 +38,8 @@ export const ProfessorsProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const fetchProfessors = useCallback(async () => {
     setIsLoading(true);
-    // Explicitly select professor_id and fallback to employee_id if needed
-    const { data, error } = await supabase.from('professors').select('*, professor_id');
+    // Explicitly select professor_id, filiere_ids and fallback to employee_id if needed
+    const { data, error } = await supabase.from('professors').select('*, professor_id, filiere_ids');
 
     if (error) {
       console.error('Error fetching professors:', error);
@@ -47,10 +47,11 @@ export const ProfessorsProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       toast({ title: 'Error', description: 'Failed to fetch professors.', variant: 'destructive' });
       setProfessors([]); // Clear professors on error
     } else if (data) {
-      // Map employee_id to professor_id if professor_id is missing
+      // Map employee_id to professor_id if professor_id is missing, and filiere_ids to filieres
       const mapped = data.map((prof: any) => ({
         ...prof,
         professor_id: prof.professor_id || prof.employee_id || '',
+        filieres: prof.filiere_ids || [],
       }));
       setProfessors(mapped as Professor[]);
       setError(null);
@@ -59,29 +60,38 @@ export const ProfessorsProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, [toast]);
 
   const addProfessor = async (professorData: Omit<Professor, 'id' | 'created_at' | 'updated_at'>) => {
-    const { data, error } = await supabase.from('professors').insert([professorData]).select();
+    // Map filieres to filiere_ids for Supabase
+    const { filieres, ...rest } = professorData;
+    const payload = { ...rest, filiere_ids: filieres };
+    const { data, error } = await supabase.from('professors').insert([payload]).select();
 
     if (error) {
       console.error('Error adding professor:', error);
       setError('Failed to add professor.');
       toast({ title: 'Error', description: 'Failed to add professor.', variant: 'destructive' });
     } else if (data && data.length > 0) {
-      setProfessors(prevProfessors => [...prevProfessors, data[0] as Professor]);
+      // Map filiere_ids to filieres for local state
+      const prof = { ...data[0], filieres: data[0].filiere_ids || [] };
+      setProfessors(prevProfessors => [...prevProfessors, prof as Professor]);
       setError(null);
       toast({ title: 'Success', description: 'Professor added successfully.' });
     }
   };
 
-  // Note: Similar to students, updateProfessor excludes email and professor_id
   const updateProfessor = async (id: string, professorData: Partial<Omit<Professor, 'id' | 'created_at' | 'updated_at' | 'email' | 'professor_id'>>) => {
-    const { data, error } = await supabase.from('professors').update(professorData).eq('id', id).select();
+    // Map filieres to filiere_ids for Supabase
+    const { filieres, ...rest } = professorData;
+    const payload = filieres !== undefined ? { ...rest, filiere_ids: filieres } : rest;
+    const { data, error } = await supabase.from('professors').update(payload).eq('id', id).select();
 
     if (error) {
       console.error('Error updating professor:', error);
       setError('Failed to update professor.');
       toast({ title: 'Error', description: 'Failed to update professor.', variant: 'destructive' });
     } else if (data && data.length > 0) {
-      setProfessors(prevProfessors => prevProfessors.map(p => p.id === id ? data[0] as Professor : p));
+      // Map filiere_ids to filieres for local state
+      const prof = { ...data[0], filieres: data[0].filiere_ids || [] };
+      setProfessors(prevProfessors => prevProfessors.map(p => p.id === id ? prof as Professor : p));
       setError(null);
       toast({ title: 'Success', description: 'Professor updated successfully.' });
     }
