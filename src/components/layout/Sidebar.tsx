@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   LayoutDashboard,
@@ -13,7 +12,8 @@ import {
   Edit,
   FileText,
   User,
-  Link
+  Link,
+  LogOut
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { SidebarProps } from '@/types';
@@ -82,6 +82,12 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps & { onToggle?: () => vo
           </Button>
         )}
       </div>
+      <div className="px-4 pb-2">
+        <Button variant="outline" size="sm" className="w-full flex items-center gap-2" onClick={logout}>
+          <LogOut className="h-4 w-4" />
+          <span>Logout</span>
+        </Button>
+      </div>
       <ScrollArea className="flex-1 px-3">
         <div className="space-y-1">
           {navigationItems.map((item) => (
@@ -98,11 +104,6 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps & { onToggle?: () => vo
           ))}
         </div>
       </ScrollArea>
-      <div className="p-4">
-        <Button variant="outline" size="sm" className="w-full" onClick={logout}>
-          Logout
-        </Button>
-      </div>
     </div>
   );
 
