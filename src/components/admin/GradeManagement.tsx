@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { Download, Edit, Settings, GraduationCap, BookOpen, Plus } from 'lucide-react';
+import { Download, Edit, Settings, GraduationCap, BookOpen, Plus, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useModules } from '@/contexts/ModulesContext';
 import { useFilieres } from '@/contexts/FilieresContext';
@@ -35,7 +35,7 @@ const GradeManagement = () => {
   const { toast } = useToast();
   const { modules, isLoading: isLoadingModules } = useModules();
   const { filieres, isLoading: isLoadingFilieres } = useFilieres();
-  const { grades, isLoading: isLoadingGrades, error: gradesError, fetchGrades, updateGrade, deleteGrade, calculateFinalGrade, addGrade } = useGrades();
+  const { grades, isLoading: isLoadingGrades, error: gradesError, fetchGrades, updateGrade, deleteGrade, addGrade } = useGrades();
   const { students, isLoading: isLoadingStudents } = useStudents();
 
   const [selectedFiliere, setSelectedFiliere] = useState('all');
@@ -216,25 +216,25 @@ const GradeManagement = () => {
   //   fetchGrades();
   // }, [fetchGrades]); // No dependencies needed as fetchGrades comes from context and has its own deps
 
-  // Combine loading states from all contexts
-  const overallLoading = isLoadingGrades || isLoadingFilieres || isLoadingModules || isLoadingStudents;
+  // Build maps for fast lookup
+  const studentMap = useMemo(() => {
+    const map = new Map();
+    students.forEach(s => map.set(s.id, s));
+    return map;
+  }, [students]);
+  const moduleMap = useMemo(() => {
+    const map = new Map();
+    modules.forEach(m => map.set(m.id, m));
+    return map;
+  }, [modules]);
 
-  useEffect(() => {
-    // Debug: log all grades and their module.filiere and student.filiere
-    if (grades && grades.length > 0) {
-      console.table(grades.map(g => ({
-        id: g.id,
-        moduleFiliere: g.modules?.filiere,
-        studentFiliere: g.students?.filiere,
-        moduleCode: g.modules?.code,
-        moduleName: g.modules?.name,
-        student: g.students?.student_id,
-      })));
-    }
-  }, [grades]);
-
-  if (overallLoading) {
-    return <div>Loading data...</div>;
+  if (isLoadingGrades) {
+    return (
+      <div className="flex flex-col items-center justify-center h-96 gap-4">
+        <Loader2 className="animate-spin h-10 w-10 text-blue-500" />
+        <div>Loading grades...</div>
+      </div>
+    );
   }
 
   if (gradesError) {
@@ -476,31 +476,40 @@ const GradeManagement = () => {
                 {uniqueStudentIds.length > 0 ? (
                   uniqueStudentIds.map(studentId => {
                     const studentGrades = gradesByStudentMap.get(studentId) || [];
-                    const studentInfo = findStudentById(studentId);
+                    const studentInfo = studentMap.get(studentId);
                     if (!studentInfo) return null; // Skip if student info not found
                     return (
                       <TableRow key={studentId}>
-                        <TableCell>{studentInfo.student_id}</TableCell><TableCell>{`${studentInfo.first_name} ${studentInfo.last_name}`}</TableCell><TableCell>{studentInfo.filiere}</TableCell><TableCell>{studentInfo.level}</TableCell><TableCell>{studentInfo.semester || 'N/A'}</TableCell>{uniqueModules.map(module => {
+                        <TableCell>{studentInfo.student_id}</TableCell>
+                        <TableCell>{studentInfo ? `${studentInfo.first_name} ${studentInfo.last_name}` : <Loader2 className="animate-spin h-4 w-4 mx-auto" />}</TableCell>
+                        <TableCell>{studentInfo.filiere}</TableCell>
+                        <TableCell>{studentInfo.level}</TableCell>
+                        <TableCell>{'N/A'}</TableCell>
+                        {uniqueModules.map(module => {
                           const gradeEntry = studentGrades.find(g => g.module_id === module.id);
-                          const finalGrade = gradeEntry 
-                            ? calculateFinalGrade(gradeEntry.cc_grade, gradeEntry.exam_grade, module.id) 
-                            : undefined;
-                        return (
-                            <TableCell key={module.id} className="text-center">{gradeEntry ? (<div className="space-y-1"><div>CC: {gradeEntry.cc_grade ?? 'N/A'}</div><div>Exam: {gradeEntry.exam_grade ?? 'N/A'}</div><div className={getGradeColor(finalGrade)}>Final: {finalGrade ?? 'N/A'}</div></div>) : 'N/A'}</TableCell>
-                        );
-                      })}<TableCell className="text-right"><Button variant="outline" size="sm" disabled>Edit All</Button></TableCell>
-                    </TableRow>
+                          const moduleInfo = moduleMap.get(module.id);
+                          return (
+                            <TableCell key={module.id} className="text-center">
+                              {gradeEntry ? (
+                                <div className="space-y-1">
+                                  {gradeEntry.assignment1 !== undefined && <div>Assignment 1: {gradeEntry.assignment1}</div>}
+                                  {gradeEntry.assignment2 !== undefined && <div>Assignment 2: {gradeEntry.assignment2}</div>}
+                                  {gradeEntry.midterm !== undefined && <div>Midterm: {gradeEntry.midterm}</div>}
+                                  {gradeEntry.final !== undefined && <div>Final: {gradeEntry.final}</div>}
+                                  {gradeEntry.overall !== undefined && <div className={getGradeColor(gradeEntry.overall)}>Overall: {gradeEntry.overall}</div>}
+                                </div>
+                              ) : 'N/A'}
+                            </TableCell>
+                          );
+                        })}
+                        <TableCell className="text-right"><Button variant="outline" size="sm" disabled>Edit All</Button></TableCell>
+                      </TableRow>
                     );
                   })
-                ) : ( overallLoading ? (
-                   <TableRow><TableCell colSpan={uniqueModules.length + 6} className="text-center">Loading...</TableCell></TableRow>
-                ) : gradesError ? (
-                   <TableRow><TableCell colSpan={uniqueModules.length + 6} className="text-center text-red-500">Error loading grades.</TableCell></TableRow>
                 ) : (
                   <TableRow>
                     <TableCell colSpan={uniqueModules.length + 6} className="text-center">No grades found for the selected filters.</TableCell>
                   </TableRow>
-                )
                 )}
                 </TableBody>
               </Table>

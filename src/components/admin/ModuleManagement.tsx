@@ -49,6 +49,7 @@ const ModuleManagement = () => {
     status: 'active' as 'active' | 'inactive'
   });
   const { toast } = useToast();
+  const [searchTerm, setSearchTerm] = useState('');
 
   const filieres = ['MGE', 'MDI', 'FACG', 'MRI', 'IISI3', 'IISI5', 'IISRT'];
   const academicLevels = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'];
@@ -69,8 +70,12 @@ const ModuleManagement = () => {
       filtered = filtered.filter(module => module.semester === filters.semester);
     }
 
+    if (searchTerm.trim() !== '') {
+      filtered = filtered.filter(module => module.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    }
+
     setFilteredModules(filtered);
-  }, [filters, modules]);
+  }, [filters, modules, searchTerm]);
 
   const handleAdd = async () => {
     if (!formData.code || !formData.name || !formData.filiere) {
@@ -182,7 +187,17 @@ const ModuleManagement = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="search-module">Search Module Name</Label>
+              <Input
+                id="search-module"
+                type="text"
+                placeholder="Search by module name..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+              />
+            </div>
             <div className="space-y-2">
               <Label>Filière</Label>
               <Select value={filters.filiere} onValueChange={(value) => setFilters({ ...filters, filiere: value })}>
@@ -197,7 +212,6 @@ const ModuleManagement = () => {
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
               <Label>Academic Level</Label>
               <Select value={filters.academic_level} onValueChange={(value) => setFilters({ ...filters, academic_level: value })}>
@@ -212,7 +226,6 @@ const ModuleManagement = () => {
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
               <Label>Semester</Label>
               <Select value={filters.semester} onValueChange={(value) => setFilters({ ...filters, semester: value })}>
@@ -227,12 +240,11 @@ const ModuleManagement = () => {
                 </SelectContent>
               </Select>
             </div>
-
-            <div className="space-y-2">
+            <div className="space-y-2 flex flex-col justify-end">
               <Label>&nbsp;</Label>
               <Button 
                 variant="outline" 
-                onClick={() => setFilters({ filiere: 'all', academic_level: 'all', semester: 'all' })}
+                onClick={() => { setFilters({ filiere: 'all', academic_level: 'all', semester: 'all' }); setSearchTerm(''); }}
                 className="w-full"
               >
                 Clear Filters
