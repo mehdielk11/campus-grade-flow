@@ -75,7 +75,7 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps & { onToggle?: () => vo
           <span className="font-bold text-lg tracking-tight text-gray-900">Portail SupMTI</span>
         )}
       </div>
-      <ScrollArea className="flex-1 px-3">
+      <ScrollArea className="flex-1 px-3 pb-32">
         <div className="space-y-1">
           {navigationItems.map((item) => (
             <RouterLink
@@ -91,7 +91,7 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps & { onToggle?: () => vo
           ))}
         </div>
       </ScrollArea>
-      <div className="mt-auto flex flex-col gap-2 pb-4 px-4">
+      <div className="fixed bottom-0 left-0 z-20 w-16 md:w-64 transition-all duration-300 px-4 pb-4" style={{ width: state === 'collapsed' ? '4rem' : '16rem' }}>
         <RouterLink to="/profile" className="flex items-center gap-2 mb-2">
           <Avatar className="w-8 h-8">
             <AvatarImage src="https://github.com/shadcn.png" alt="Avatar" />
