@@ -49,10 +49,10 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps & { onToggle?: () => vo
     ...(user?.role === 'administrator' || user?.role === 'super_admin' ? [
       { name: 'Filières', href: '/departments', icon: Building },
       { name: 'Modules', href: '/modules', icon: BookOpen },
+      { name: 'Grades', href: '/grades', icon: BarChart },
       { name: 'Module Assignment', href: '/module-assignment', icon: Link },
       { name: 'Students', href: '/students', icon: Users },
       { name: 'Professors', href: '/professors', icon: UserCheck },
-      { name: 'Grades', href: '/grades', icon: BarChart },
     ] : []),
     ...(user?.role === 'professor' ? [
       { name: 'Classes', href: '/classes', icon: Users },
