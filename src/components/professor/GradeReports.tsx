@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -6,57 +6,98 @@ import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Download, TrendingUp, Users, Award } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
-const gradeDistributionData = [
-  { grade: 'A (90-100)', count: 8, percentage: 33 },
-  { grade: 'B (80-89)', count: 7, percentage: 29 },
-  { grade: 'C (70-79)', count: 5, percentage: 21 },
-  { grade: 'D (60-69)', count: 3, percentage: 13 },
-  { grade: 'F (0-59)', count: 1, percentage: 4 }
-];
-
-const performanceData = [
-  { assignment: 'Assignment 1', average: 82, highest: 95, lowest: 65 },
-  { assignment: 'Assignment 2', average: 85, highest: 98, lowest: 70 },
-  { assignment: 'Midterm', average: 78, highest: 94, lowest: 58 },
-  { assignment: 'Final Project', average: 88, highest: 100, lowest: 72 }
-];
+import { useAuth } from '@/contexts/AuthContext';
+import { useModules } from '@/contexts/ModulesContext';
+import { useGrades } from '@/contexts/GradesContext';
+import type { Module as ModuleType } from '@/contexts/ModulesContext';
 
 const pieColors = ['#22c55e', '#3b82f6', '#eab308', '#f97316', '#ef4444'];
 
 const GradeReports = () => {
   const { toast } = useToast();
-  const [selectedCourse, setSelectedCourse] = useState('CS101');
+  const { user } = useAuth();
+  const { modules, isLoading: isLoadingModules } = useModules();
+  const { grades, isLoading: isLoadingGrades } = useGrades();
+  const [selectedModuleId, setSelectedModuleId] = useState<string>('');
   const [reportType, setReportType] = useState('distribution');
 
-  const courses = [
-    { id: 'CS101', name: 'Introduction to Programming' },
-    { id: 'CS102', name: 'Data Structures' },
-    { id: 'CS201', name: 'Algorithms' }
-  ];
+  // Filter modules for this professor
+  const professorModules = useMemo(() => {
+    if (!user?.id) return [];
+    return (modules as ModuleType[]).filter(m => (m as any).professor_id === user.id);
+  }, [modules, user]);
+
+  // If no module selected, default to first
+  React.useEffect(() => {
+    if (professorModules.length > 0 && !selectedModuleId) {
+      setSelectedModuleId(professorModules[0].id);
+    }
+  }, [professorModules, selectedModuleId]);
+
+  // Filter grades for selected module
+  const moduleGrades = useMemo(() => {
+    if (!selectedModuleId) return [];
+    return grades.filter(g => g.module_id === selectedModuleId);
+  }, [grades, selectedModuleId]);
+
+  // Compute grade distribution
+  const gradeDistributionData = useMemo(() => {
+    const buckets = [
+      { grade: 'A (90-100)', count: 0 },
+      { grade: 'B (80-89)', count: 0 },
+      { grade: 'C (70-79)', count: 0 },
+      { grade: 'D (60-69)', count: 0 },
+      { grade: 'F (0-59)', count: 0 },
+    ];
+    moduleGrades.forEach(g => {
+      const val = g.overall ?? 0;
+      if (val >= 90) buckets[0].count++;
+      else if (val >= 80) buckets[1].count++;
+      else if (val >= 70) buckets[2].count++;
+      else if (val >= 60) buckets[3].count++;
+      else buckets[4].count++;
+    });
+    const total = moduleGrades.length || 1;
+    return buckets.map(b => ({ ...b, percentage: Math.round((b.count / total) * 100) }));
+  }, [moduleGrades]);
+
+  // Compute assignment performance (mocked as average, highest, lowest for each field)
+  const performanceData = useMemo(() => {
+    const keys = ['assignment1', 'assignment2', 'midterm', 'final'] as const;
+    return keys.map(key => {
+      const values = moduleGrades.map(g => g[key] ?? 0).filter(v => typeof v === 'number');
+      if (values.length === 0) return { assignment: key, average: 0, highest: 0, lowest: 0 };
+      const average = Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+      const highest = Math.max(...values);
+      const lowest = Math.min(...values);
+      return { assignment: key.charAt(0).toUpperCase() + key.slice(1), average, highest, lowest };
+    });
+  }, [moduleGrades]);
+
+  const calculateStats = () => {
+    const totalStudents = moduleGrades.length;
+    const averageGrade = moduleGrades.length > 0 ? Math.round(moduleGrades.reduce((sum, g) => sum + (g.overall ?? 0), 0) / moduleGrades.length) : 0;
+    const passRate = moduleGrades.length > 0 ? Math.round((moduleGrades.filter(g => (g.overall ?? 0) >= 60).length / moduleGrades.length) * 100) : 0;
+    return { totalStudents, averageGrade, passRate };
+  };
+  const stats = calculateStats();
 
   const handleExportReport = (format: 'pdf' | 'excel') => {
     toast({
-      title: "Export started",
+      title: 'Export started',
       description: `Grade report is being generated in ${format.toUpperCase()} format.`,
     });
   };
 
-  const calculateStats = () => {
-    const totalStudents = gradeDistributionData.reduce((sum, item) => sum + item.count, 0);
-    const averageGrade = gradeDistributionData.reduce((sum, item, index) => {
-      const gradePoints = [95, 84.5, 74.5, 64.5, 49.5][index];
-      return sum + (item.count * gradePoints);
-    }, 0) / totalStudents;
-
-    return {
-      totalStudents,
-      averageGrade: Math.round(averageGrade),
-      passRate: Math.round(((totalStudents - gradeDistributionData[4].count) / totalStudents) * 100)
-    };
-  };
-
-  const stats = calculateStats();
+  if (isLoadingModules || isLoadingGrades) {
+    return <div>Loading reports...</div>;
+  }
+  if (!user?.professorId) {
+    return <div className="text-red-600">Not authorized or not a professor.</div>;
+  }
+  if (professorModules.length === 0) {
+    return <div className="text-gray-600">You are not assigned to any modules.</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -72,7 +113,6 @@ const GradeReports = () => {
             <div className="text-3xl font-bold text-blue-600">{stats.totalStudents}</div>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center gap-2">
@@ -84,7 +124,6 @@ const GradeReports = () => {
             <div className="text-3xl font-bold text-green-600">{stats.averageGrade}%</div>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center gap-2">
@@ -96,41 +135,43 @@ const GradeReports = () => {
             <div className="text-3xl font-bold text-purple-600">{stats.passRate}%</div>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">Letter Grade</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-orange-600">B+</div>
+            <div className="text-3xl font-bold text-orange-600">{
+              stats.averageGrade >= 90 ? 'A' :
+              stats.averageGrade >= 80 ? 'B' :
+              stats.averageGrade >= 70 ? 'C' :
+              stats.averageGrade >= 60 ? 'D' : 'F'
+            }</div>
             <p className="text-sm text-gray-500">Class Average</p>
           </CardContent>
         </Card>
       </div>
-
       <Card>
         <CardHeader>
           <CardTitle>Grade Reports & Analytics</CardTitle>
-          <CardDescription>Comprehensive grade analysis for your courses</CardDescription>
+          <CardDescription>Comprehensive grade analysis for your modules</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Course</label>
-              <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+              <label className="text-sm font-medium">Module</label>
+              <Select value={selectedModuleId} onValueChange={setSelectedModuleId}>
                 <SelectTrigger className="w-64">
-                  <SelectValue placeholder="Select course" />
+                  <SelectValue placeholder="Select module" />
                 </SelectTrigger>
                 <SelectContent>
-                  {courses.map(course => (
-                    <SelectItem key={course.id} value={course.id}>
-                      {course.id} - {course.name}
+                  {professorModules.map(module => (
+                    <SelectItem key={module.id} value={module.id}>
+                      {module.code} - {module.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
               <label className="text-sm font-medium">Report Type</label>
               <Select value={reportType} onValueChange={setReportType}>
@@ -143,9 +184,7 @@ const GradeReports = () => {
                 </SelectContent>
               </Select>
             </div>
-
             <div className="flex-1" />
-
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => handleExportReport('pdf')}>
                 <Download className="h-4 w-4 mr-2" />
@@ -157,7 +196,6 @@ const GradeReports = () => {
               </Button>
             </div>
           </div>
-
           {reportType === 'distribution' ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
@@ -176,7 +214,6 @@ const GradeReports = () => {
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
-
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Grade Breakdown</CardTitle>
@@ -200,20 +237,6 @@ const GradeReports = () => {
                       <Tooltip />
                     </PieChart>
                   </ResponsiveContainer>
-                  <div className="mt-4 space-y-2">
-                    {gradeDistributionData.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: pieColors[index] }}
-                          />
-                          <span className="text-sm">{item.grade}</span>
-                        </div>
-                        <Badge variant="outline">{item.count} students</Badge>
-                      </div>
-                    ))}
-                  </div>
                 </CardContent>
               </Card>
             </div>

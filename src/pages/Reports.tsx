@@ -1,18 +1,31 @@
-
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import AdminReports from '@/components/admin/AdminReports';
-import GradeReports from '@/components/professor/GradeReports';
 
 const Reports = () => {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+  const navigate = useNavigate();
 
-  if (!user) return null;
+  React.useEffect(() => {
+    if (!isLoading && user && (user.role === 'student' || user.role === 'professor')) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, isLoading, navigate]);
+
+  if (isLoading || !user) return null;
+  if (user.role === 'student' || user.role === 'professor') {
+    return (
+      <DashboardLayout>
+        <div className="text-center text-red-600 font-semibold text-xl mt-10">Not authorized to view this page.</div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
-      {user.role === 'professor' ? <GradeReports /> : <AdminReports />}
+      <AdminReports />
     </DashboardLayout>
   );
 };
