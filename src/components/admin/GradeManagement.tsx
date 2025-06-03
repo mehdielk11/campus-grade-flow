@@ -15,6 +15,22 @@ import { useFilieres } from '@/contexts/FilieresContext';
 import { useGrades, EnrichedGrade } from '@/contexts/GradesContext';
 import { useStudents } from '@/contexts/StudentsContext';
 
+// Add this type override for modules fetched from backend
+interface Module {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  credits: number;
+  filiere: string;
+  academic_level: string;
+  semester: string;
+  professor?: string;
+  capacity?: number;
+  enrolled?: number;
+  status?: 'active' | 'inactive';
+}
+
 const GradeManagement = () => {
   const { toast } = useToast();
   const { modules, isLoading: isLoadingModules } = useModules();
@@ -61,7 +77,7 @@ const GradeManagement = () => {
 
     if (selectedLevel !== 'all') {
       // Filter by academic level stored in the module object related to the grade
-      filtered = filtered.filter(grade => grade.modules?.academicLevel === `Level ${selectedLevel}`);
+      filtered = filtered.filter(grade => grade.modules?.academic_level === `Level ${selectedLevel}`);
     }
 
     if (selectedSemester !== 'all') {
@@ -243,9 +259,9 @@ const GradeManagement = () => {
                          <SelectValue placeholder="Select a module" />
                       </SelectTrigger>
                       <SelectContent>
-                         {modules.map(module => (
+                         {(modules as Module[]).map(module => (
                             <SelectItem key={module.id} value={module.id}>
-                               {`${module.name} (${module.code}) - ${module.academicLevel}, ${module.semester}`}
+                               {`${module.name} (${module.code}) - ${module.academic_level}, ${module.semester}`}
                             </SelectItem>
                          ))}
                       </SelectContent>
@@ -363,10 +379,10 @@ const GradeManagement = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Modules</SelectItem>
-                  {modules
+                  {(modules as Module[])
                      .filter(module => 
                         (selectedFiliere === 'all' || module.filiere === selectedFiliere) &&
-                        (selectedLevel === 'all' || module.academicLevel === `Level ${selectedLevel}`) &&
+                        (selectedLevel === 'all' || module.academic_level === `Level ${selectedLevel}`) &&
                         (selectedSemester === 'all' || module.semester === selectedSemester)
                      )
                     .map((module) => (
@@ -425,44 +441,18 @@ const GradeManagement = () => {
                   uniqueStudentIds.map(studentId => {
                     const studentGrades = gradesByStudentMap.get(studentId) || [];
                     const studentInfo = findStudentById(studentId);
-                    
                     if (!studentInfo) return null; // Skip if student info not found
-
                     return (
                       <TableRow key={studentId}>
-                        <TableCell>{studentInfo.student_id}</TableCell>
-                        <TableCell>{`${studentInfo.first_name} ${studentInfo.last_name}`}</TableCell>
-                        <TableCell>{studentInfo.filiere}</TableCell>
-                        <TableCell>{studentInfo.level}</TableCell>
-                         <TableCell>{studentInfo.semester || 'N/A'}</TableCell> {/* Display student semester */}
-                        {/* Display grades for each unique module for this student */}
-                        {uniqueModules.map(module => {
+                        <TableCell>{studentInfo.student_id}</TableCell><TableCell>{`${studentInfo.first_name} ${studentInfo.last_name}`}</TableCell><TableCell>{studentInfo.filiere}</TableCell><TableCell>{studentInfo.level}</TableCell><TableCell>{studentInfo.semester || 'N/A'}</TableCell>{uniqueModules.map(module => {
                           const gradeEntry = studentGrades.find(g => g.module_id === module.id);
                           const finalGrade = gradeEntry 
                             ? calculateFinalGrade(gradeEntry.cc_grade, gradeEntry.exam_grade, module.id) 
                             : undefined;
-
                         return (
-                            <TableCell key={module.id} className="text-center">
-                              {gradeEntry ? (
-                                <div className="space-y-1">
-                                  <div>CC: {gradeEntry.cc_grade ?? 'N/A'}</div>
-                                  <div>Exam: {gradeEntry.exam_grade ?? 'N/A'}</div>
-                                  <div className={getGradeColor(finalGrade)}>Final: {finalGrade ?? 'N/A'}</div>
-                                </div>
-                              ) : 'N/A'}
-                            </TableCell>
+                            <TableCell key={module.id} className="text-center">{gradeEntry ? (<div className="space-y-1"><div>CC: {gradeEntry.cc_grade ?? 'N/A'}</div><div>Exam: {gradeEntry.exam_grade ?? 'N/A'}</div><div className={getGradeColor(finalGrade)}>Final: {finalGrade ?? 'N/A'}</div></div>) : 'N/A'}</TableCell>
                         );
-                      })}
-                        <TableCell className="text-right">
-                          {/* Action buttons (Edit/Delete) for student's grades. 
-                             Editing could open a dialog to edit all grades for that student/module combo.
-                             Deletion might delete all grades for that student in the filtered view, or a specific grade entry.
-                             Needs clarification on desired behavior.
-                           */}
-                           {/* Placeholder for Actions - implementation depends on desired flow */}
-                           <Button variant="outline" size="sm" disabled>Edit All</Button>
-                      </TableCell>
+                      })}<TableCell className="text-right"><Button variant="outline" size="sm" disabled>Edit All</Button></TableCell>
                     </TableRow>
                     );
                   })

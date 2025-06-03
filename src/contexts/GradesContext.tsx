@@ -18,7 +18,7 @@ export interface Grade {
 
 // Define an enriched grade interface including related data (student and module details)
 export interface EnrichedGrade extends Grade {
-  students?: { // Assuming a join might return student details
+  students?: {
     first_name: string;
     last_name: string;
     student_id: string;
@@ -26,11 +26,11 @@ export interface EnrichedGrade extends Grade {
     level?: number;
     semester?: string;
   };
-  modules?: { // Assuming a join might return module details
+  modules?: {
     code: string;
     name: string;
     filiere: string;
-    academicLevel: string;
+    academic_level: string;
     semester: string;
   };
 }
@@ -59,10 +59,10 @@ export const GradesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const fetchGrades = async () => {
     setIsLoading(true);
-    // Fetch grades and join with students and modules tables to get related data
+    // Use academic_level directly in the join
     const { data, error } = await supabase
       .from('grades')
-      .select('*, students!inner(first_name, last_name, student_id, filiere, level, semester), modules!inner(code, name, filiere, academicLevel, semester)');
+      .select('*, students:student_id(first_name, last_name, student_id, filiere, level), modules:module_id(code, name, filiere, academic_level, semester)');
 
     if (error) {
       console.error('Error fetching grades:', error);
@@ -89,15 +89,15 @@ export const GradesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
      // Calculate final grade before inserting
     const final_grade = calculateFinalGrade(gradeData.cc_grade, gradeData.exam_grade, gradeData.module_id);
 
-    const { data, error } = await supabase.from('grades').insert([{ ...gradeData, final_grade }]).select('*, students!inner(first_name, last_name, student_id, filiere, level, semester), modules!inner(code, name, filiere, academicLevel, semester)'); // Select enriched data on insert
+    const { data: dataAdd, error: errorAdd } = await supabase.from('grades').insert([{ ...gradeData, final_grade }]).select('*, students!inner(first_name, last_name, student_id, filiere, level, semester), modules!inner(code, name, filiere, academic_level, semester)'); // Select enriched data on insert
 
-    if (error) {
-      console.error('Error adding grade:', error);
+    if (errorAdd) {
+      console.error('Error adding grade:', errorAdd);
       setError('Failed to add grade.');
       toast({ title: 'Error', description: 'Failed to add grade.', variant: 'destructive' });
-    } else if (data && data.length > 0) {
+    } else if (dataAdd && dataAdd.length > 0) {
        // Update the state with the enriched grade data returned from the insert
-      setGrades(prevGrades => [...prevGrades, data[0] as EnrichedGrade]);
+      setGrades(prevGrades => [...prevGrades, dataAdd[0] as EnrichedGrade]);
       setError(null);
       toast({ title: 'Success', description: 'Grade added successfully.' });
     }
@@ -123,16 +123,15 @@ export const GradesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     const dataToUpdate = final_grade !== undefined ? { ...gradeData, final_grade } : gradeData;
 
-    // Update grade in Supabase and select enriched data to update state
-    const { data, error } = await supabase.from('grades').update(dataToUpdate).eq('id', id).select('*, students!inner(first_name, last_name, student_id, filiere, level, semester), modules!inner(code, name, filiere, academicLevel, semester)');
+    const { data: dataUpdate, error: errorUpdate } = await supabase.from('grades').update(dataToUpdate).eq('id', id).select('*, students!inner(first_name, last_name, student_id, filiere, level, semester), modules!inner(code, name, filiere, academic_level, semester)');
 
-    if (error) {
-      console.error('Error updating grade:', error);
+    if (errorUpdate) {
+      console.error('Error updating grade:', errorUpdate);
       setError('Failed to update grade.');
       toast({ title: 'Error', description: 'Failed to update grade.', variant: 'destructive' });
-    } else if (data && data.length > 0) {
+    } else if (dataUpdate && dataUpdate.length > 0) {
       // Update the state with the enriched grade data returned
-      setGrades(prevGrades => prevGrades.map(g => g.id === id ? data[0] as EnrichedGrade : g));
+      setGrades(prevGrades => prevGrades.map(g => g.id === id ? dataUpdate[0] as EnrichedGrade : g));
       setError(null);
       toast({ title: 'Success', description: 'Grade updated successfully.' });
     }

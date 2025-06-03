@@ -9,7 +9,8 @@ export interface Module {
   description?: string;
   credits: number;
   filiere: string;
-  academicLevel: string;
+  academic_level?: string;
+  academicLevel?: string;
   semester: string;
   professor?: string;
   capacity?: number;

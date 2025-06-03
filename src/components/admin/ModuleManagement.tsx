@@ -18,7 +18,7 @@ interface Module {
   description?: string;
   credits: number;
   filiere: string;
-  academicLevel: string;
+  academic_level?: string;
   semester: string;
   professor?: string;
   capacity?: number;
@@ -33,7 +33,7 @@ const ModuleManagement = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     filiere: 'all',
-    academicLevel: 'all',
+    academic_level: 'all',
     semester: 'all'
   });
   const [formData, setFormData] = useState({
@@ -42,7 +42,7 @@ const ModuleManagement = () => {
     description: '',
     credits: 3,
     filiere: 'MGE',
-    academicLevel: 'Level 1',
+    academic_level: 'Level 1',
     semester: 'Semester 1',
     professor: '',
     capacity: 30,
@@ -61,8 +61,8 @@ const ModuleManagement = () => {
       filtered = filtered.filter(module => module.filiere === filters.filiere);
     }
 
-    if (filters.academicLevel !== 'all') {
-      filtered = filtered.filter(module => module.academicLevel === filters.academicLevel);
+    if (filters.academic_level !== 'all') {
+      filtered = filtered.filter(module => module.academic_level === filters.academic_level);
     }
 
     if (filters.semester !== 'all') {
@@ -97,7 +97,7 @@ const ModuleManagement = () => {
       description: module.description,
       credits: module.credits,
       filiere: module.filiere,
-      academicLevel: module.academicLevel,
+      academic_level: module.academic_level,
       semester: module.semester,
       professor: module.professor,
       capacity: module.capacity,
@@ -133,7 +133,7 @@ const ModuleManagement = () => {
       description: '',
       credits: 3,
       filiere: 'MGE',
-      academicLevel: 'Level 1',
+      academic_level: 'Level 1',
       semester: 'Semester 1',
       professor: '',
       capacity: 30,
@@ -183,7 +183,7 @@ const ModuleManagement = () => {
 
             <div className="space-y-2">
               <Label>Academic Level</Label>
-              <Select value={filters.academicLevel} onValueChange={(value) => setFilters({ ...filters, academicLevel: value })}>
+              <Select value={filters.academic_level} onValueChange={(value) => setFilters({ ...filters, academic_level: value })}>
                 <SelectTrigger>
                   <SelectValue placeholder="All Levels" />
                 </SelectTrigger>
@@ -215,7 +215,7 @@ const ModuleManagement = () => {
               <Label>&nbsp;</Label>
               <Button 
                 variant="outline" 
-                onClick={() => setFilters({ filiere: 'all', academicLevel: 'all', semester: 'all' })}
+                onClick={() => setFilters({ filiere: 'all', academic_level: 'all', semester: 'all' })}
                 className="w-full"
               >
                 Clear Filters
@@ -269,8 +269,8 @@ const ModuleManagement = () => {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="academicLevel">Academic Level</Label>
-                <Select value={formData.academicLevel} onValueChange={(value) => setFormData({ ...formData, academicLevel: value })}>
+                <Label htmlFor="academic_level">Academic Level</Label>
+                <Select value={formData.academic_level} onValueChange={(value) => setFormData({ ...formData, academic_level: value })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select level" />
                   </SelectTrigger>
@@ -394,7 +394,7 @@ const ModuleManagement = () => {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Level:</span>
-                  <Badge variant="outline">{module.academicLevel}</Badge>
+                  <Badge variant="outline">{module.academic_level}</Badge>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Semester:</span>
