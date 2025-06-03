@@ -71,14 +71,14 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps & { onToggle?: () => vo
   ];
 
   const renderSidebarContent = () => (
-    <div className={`flex flex-col h-full transition-all duration-300 ${state === 'collapsed' ? 'w-16' : 'w-64'}`}>
+    <div className={`flex flex-col h-screen transition-all duration-300 ${state === 'collapsed' ? 'w-16' : 'w-64'}`}>
       <div className="flex items-center gap-3 px-4 pt-6 pb-4">
         <GraduationCap className="h-8 w-8 text-blue-600" strokeWidth={2.2} />
         {state !== 'collapsed' && (
           <span className="font-bold text-lg tracking-tight text-gray-900">Portail SupMTI</span>
         )}
       </div>
-      <ScrollArea className="flex-1 px-3 pb-32">
+      <div className="flex-1 overflow-y-auto px-3">
         <div className="space-y-1">
           {navigationItems.map((item) => (
             <RouterLink
@@ -93,21 +93,22 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps & { onToggle?: () => vo
             </RouterLink>
           ))}
         </div>
-      </ScrollArea>
-      <div className="fixed bottom-0 left-0 z-20 w-16 md:w-64 transition-all duration-300 px-4 pb-4" style={{ width: state === 'collapsed' ? '4rem' : '16rem' }}>
-        <RouterLink to="/profile" className="flex items-center gap-2 mb-2">
-          <Avatar className="w-8 h-8">
-            <AvatarImage src="https://github.com/shadcn.png" alt="Avatar" />
-            <AvatarFallback>CN</AvatarFallback>
-          </Avatar>
-          {state !== 'collapsed' && (
-            <span className="text-sm font-medium">{user?.firstName} {user?.lastName}</span>
-          )}
-        </RouterLink>
-        <Button variant="outline" size="sm" className="w-full flex items-center gap-2" onClick={logout}>
-          <LogOut className="h-4 w-4" />
-          {state !== 'collapsed' && <span>Logout</span>}
-        </Button>
+        <hr className="my-3 border-gray-200" />
+        <div className="flex flex-col gap-2 pb-4 px-1">
+          <RouterLink to="/profile" className="flex items-center gap-2 mb-2">
+            <Avatar className="w-8 h-8">
+              <AvatarImage src="https://github.com/shadcn.png" alt="Avatar" />
+              <AvatarFallback>CN</AvatarFallback>
+            </Avatar>
+            {state !== 'collapsed' && (
+              <span className="text-sm font-medium">{user?.firstName} {user?.lastName}</span>
+            )}
+          </RouterLink>
+          <Button variant="outline" size="sm" className="w-full flex items-center gap-2" onClick={logout}>
+            <LogOut className="h-4 w-4" />
+            {state !== 'collapsed' && <span>Logout</span>}
+          </Button>
+        </div>
       </div>
     </div>
   );
