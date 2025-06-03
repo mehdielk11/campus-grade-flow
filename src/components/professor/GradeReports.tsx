@@ -40,25 +40,28 @@ const GradeReports = () => {
     return grades.filter(g => g.module_id === selectedModuleId);
   }, [grades, selectedModuleId]);
 
-  // Compute grade distribution
+  // Compute grade distribution (numeric bins for 0-20 system)
   const gradeDistributionData = useMemo(() => {
-    const buckets = [
-      { grade: 'A (90-100)', count: 0 },
-      { grade: 'B (80-89)', count: 0 },
-      { grade: 'C (70-79)', count: 0 },
-      { grade: 'D (60-69)', count: 0 },
-      { grade: 'F (0-59)', count: 0 },
+    const bins = [
+      { range: '0-4', min: 0, max: 4.99, count: 0 },
+      { range: '5-9', min: 5, max: 9.99, count: 0 },
+      { range: '10-11', min: 10, max: 11.99, count: 0 },
+      { range: '12-13', min: 12, max: 13.99, count: 0 },
+      { range: '14-15', min: 14, max: 15.99, count: 0 },
+      { range: '16-17', min: 16, max: 17.99, count: 0 },
+      { range: '18-20', min: 18, max: 20, count: 0 },
     ];
     moduleGrades.forEach(g => {
-      const val = g.overall ?? 0;
-      if (val >= 90) buckets[0].count++;
-      else if (val >= 80) buckets[1].count++;
-      else if (val >= 70) buckets[2].count++;
-      else if (val >= 60) buckets[3].count++;
-      else buckets[4].count++;
+      const val = g.module_grade ?? g.overall ?? 0;
+      for (const bin of bins) {
+        if (val >= bin.min && val <= bin.max) {
+          bin.count++;
+          break;
+        }
+      }
     });
     const total = moduleGrades.length || 1;
-    return buckets.map(b => ({ ...b, percentage: Math.round((b.count / total) * 100) }));
+    return bins.map(b => ({ ...b, percentage: Math.round((b.count / total) * 100) }));
   }, [moduleGrades]);
 
   // Compute assignment performance (mocked as average, highest, lowest for each field)
@@ -206,8 +209,8 @@ const GradeReports = () => {
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={gradeDistributionData}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="grade" angle={-45} textAnchor="end" height={80} />
-                      <YAxis />
+                      <XAxis dataKey="range" angle={-45} textAnchor="end" height={80} label={{ value: 'Grade Range', position: 'insideBottom', offset: -5 }} />
+                      <YAxis label={{ value: 'Number of Students', angle: -90, position: 'insideLeft' }} />
                       <Tooltip />
                       <Bar dataKey="count" fill="#3b82f6" />
                     </BarChart>
@@ -228,7 +231,7 @@ const GradeReports = () => {
                         outerRadius={80}
                         fill="#8884d8"
                         dataKey="count"
-                        label={({ percentage }) => `${percentage}%`}
+                        label={({ range, percentage }) => `${range}: ${percentage}%`}
                       >
                         {gradeDistributionData.map((_, index) => (
                           <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />

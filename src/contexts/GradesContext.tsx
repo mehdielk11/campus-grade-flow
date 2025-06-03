@@ -75,6 +75,9 @@ export const GradesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       // Map students and modules from arrays to single objects
       const mapped = (data as any[]).map((g) => ({
         ...g,
+        cc_grade: g.cc_grade !== null && g.cc_grade !== undefined ? parseFloat(g.cc_grade) : undefined,
+        exam_grade: g.exam_grade !== null && g.exam_grade !== undefined ? parseFloat(g.exam_grade) : undefined,
+        module_grade: g.module_grade !== null && g.module_grade !== undefined ? parseFloat(g.module_grade) : undefined,
         students: Array.isArray(g.students) ? g.students[0] : g.students,
         modules: Array.isArray(g.modules) ? g.modules[0] : g.modules,
       }));

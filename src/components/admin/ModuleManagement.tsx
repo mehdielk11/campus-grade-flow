@@ -24,6 +24,8 @@ interface Module {
   capacity?: number;
   status?: 'active' | 'inactive';
   professor_id?: string;
+  cc_percentage?: number;
+  exam_percentage?: number;
 }
 
 const ModuleManagement = () => {
@@ -46,7 +48,9 @@ const ModuleManagement = () => {
     semester: 'Semester 1',
     professor_id: '',
     capacity: 30,
-    status: 'active' as 'active' | 'inactive'
+    status: 'active' as 'active' | 'inactive',
+    cc_percentage: 30,
+    exam_percentage: 70,
   });
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
@@ -86,6 +90,14 @@ const ModuleManagement = () => {
       });
       return;
     }
+    if (Number(formData.cc_percentage) + Number(formData.exam_percentage) !== 100) {
+      toast({
+        title: "Validation Error",
+        description: "CC % and Exam % must sum to 100.",
+        variant: "destructive",
+      });
+      return;
+    }
     const modulePayload = {
       code: formData.code,
       name: formData.name,
@@ -96,6 +108,8 @@ const ModuleManagement = () => {
       capacity: formData.capacity,
       status: formData.status,
       professor_id: formData.professor_id || null,
+      cc_percentage: Number(formData.cc_percentage),
+      exam_percentage: Number(formData.exam_percentage),
     };
     await addModule(modulePayload);
     resetForm();
@@ -113,7 +127,9 @@ const ModuleManagement = () => {
       semester: module.semester,
       professor_id: module.professor_id || '',
       capacity: module.capacity,
-      status: module.status
+      status: module.status,
+      cc_percentage: typeof (module as any).cc_percentage === 'number' ? (module as any).cc_percentage : 30,
+      exam_percentage: typeof (module as any).exam_percentage === 'number' ? (module as any).exam_percentage : 70,
     });
   };
 
@@ -122,6 +138,14 @@ const ModuleManagement = () => {
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (Number(formData.cc_percentage) + Number(formData.exam_percentage) !== 100) {
+      toast({
+        title: "Validation Error",
+        description: "CC % and Exam % must sum to 100.",
         variant: "destructive",
       });
       return;
@@ -137,6 +161,8 @@ const ModuleManagement = () => {
         capacity: formData.capacity,
         status: formData.status,
         professor_id: formData.professor_id || null,
+        cc_percentage: Number(formData.cc_percentage),
+        exam_percentage: Number(formData.exam_percentage),
       };
       await updateModule(editingId, modulePayload);
       resetForm();
@@ -159,7 +185,9 @@ const ModuleManagement = () => {
       semester: 'Semester 1',
       professor_id: '',
       capacity: 30,
-      status: 'active'
+      status: 'active',
+      cc_percentage: 30,
+      exam_percentage: 70,
     });
     setIsAddingNew(false);
     setEditingId(null);
@@ -350,6 +378,48 @@ const ModuleManagement = () => {
               </div>
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="cc_percentage">CC Percentage (%)</Label>
+                <Input
+                  id="cc_percentage"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={formData.cc_percentage}
+                  onChange={e => {
+                    let val = Math.max(0, Math.min(100, Number(e.target.value)));
+                    if (val + formData.exam_percentage > 100) {
+                      val = 100 - formData.exam_percentage;
+                    }
+                    setFormData({ ...formData, cc_percentage: val });
+                  }}
+                  placeholder="e.g., 30"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="exam_percentage">Exam Percentage (%)</Label>
+                <Input
+                  id="exam_percentage"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={formData.exam_percentage}
+                  onChange={e => {
+                    let val = Math.max(0, Math.min(100, Number(e.target.value)));
+                    if (val + formData.cc_percentage > 100) {
+                      val = 100 - formData.cc_percentage;
+                    }
+                    setFormData({ ...formData, exam_percentage: val });
+                  }}
+                  placeholder="e.g., 70"
+                />
+              </div>
+              <div className="flex items-end">
+                <span className="text-sm text-gray-500">Total: {formData.cc_percentage + formData.exam_percentage}%</span>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="professor_id">Professor</Label>
               <Select
@@ -430,6 +500,11 @@ const ModuleManagement = () => {
                     <span className="text-gray-500">Semester:</span>
                     <span className="font-medium">{module.semester}</span>
                   </div>
+                </div>
+
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Grading Weights:</span>
+                  <span className="font-medium">CC: {(module as any).cc_percentage ?? 30}% | Exam: {(module as any).exam_percentage ?? 70}%</span>
                 </div>
 
                 <div className="flex gap-2 pt-3">

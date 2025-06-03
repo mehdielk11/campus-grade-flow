@@ -186,7 +186,10 @@ const GradeEntry = () => {
                           step="0.01"
                           className="w-24 text-center"
                           value={cc_grade}
-                          onChange={e => handleGradeChange(student.id, 'cc_grade', e.target.value)}
+                          onChange={e => {
+                            let val = Math.max(0, Math.min(20, Number(e.target.value)));
+                            handleGradeChange(student.id, 'cc_grade', val.toString());
+                          }}
                           placeholder="--"
                         />
                       </TableCell>
@@ -198,7 +201,10 @@ const GradeEntry = () => {
                           step="0.01"
                           className="w-24 text-center"
                           value={exam_grade}
-                          onChange={e => handleGradeChange(student.id, 'exam_grade', e.target.value)}
+                          onChange={e => {
+                            let val = Math.max(0, Math.min(20, Number(e.target.value)));
+                            handleGradeChange(student.id, 'exam_grade', val.toString());
+                          }}
                           placeholder="--"
                         />
                       </TableCell>

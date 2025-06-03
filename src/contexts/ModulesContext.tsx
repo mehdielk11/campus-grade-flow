@@ -16,6 +16,8 @@ export interface Module {
   status?: 'active' | 'inactive';
   created_at?: string;
   updated_at?: string;
+  cc_percentage?: number;
+  exam_percentage?: number;
 }
 
 interface ModulesContextType {
@@ -38,7 +40,7 @@ export const ModulesProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const fetchModules = async (limit?: number, offset?: number) => {
     setIsLoading(true);
-    let query = supabase.from('modules').select('id, code, name, description, filiere, academic_level, semester, professor_id, capacity, status, created_at, updated_at');
+    let query = supabase.from('modules').select('id, code, name, description, filiere, academic_level, semester, professor_id, capacity, status, created_at, updated_at, cc_percentage, exam_percentage');
     if (typeof limit === 'number') query = query.limit(limit);
     if (typeof offset === 'number') query = query.range(offset, offset + (limit ? limit - 1 : 9));
     const { data, error } = await query;
