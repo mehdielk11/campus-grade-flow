@@ -38,7 +38,8 @@ export const ProfessorsProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const fetchProfessors = useCallback(async () => {
     setIsLoading(true);
-    const { data, error } = await supabase.from('professors').select('*');
+    // Explicitly select professor_id and fallback to employee_id if needed
+    const { data, error } = await supabase.from('professors').select('*, professor_id');
 
     if (error) {
       console.error('Error fetching professors:', error);
@@ -46,7 +47,12 @@ export const ProfessorsProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       toast({ title: 'Error', description: 'Failed to fetch professors.', variant: 'destructive' });
       setProfessors([]); // Clear professors on error
     } else if (data) {
-      setProfessors(data as Professor[]);
+      // Map employee_id to professor_id if professor_id is missing
+      const mapped = data.map((prof: any) => ({
+        ...prof,
+        professor_id: prof.professor_id || prof.employee_id || '',
+      }));
+      setProfessors(mapped as Professor[]);
       setError(null);
     }
     setIsLoading(false);
