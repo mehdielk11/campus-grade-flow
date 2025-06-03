@@ -21,3 +21,14 @@ export const FILIERES: Filiere[] = [
   { id: 'iisi5', name: 'IISI (BAC+5)', formation: 'Ingénierie', degree: 'BAC+5', levels: [4, 5] },
   { id: 'iisrt', name: 'IISRT', formation: 'Ingénierie', degree: 'BAC+5', levels: [4, 5] },
 ];
+
+export interface Student {
+  id: string;
+  student_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  filiere?: string; // Optional: Associate student with a filiere
+  level?: number; // Optional: Associate student with a level
+  semester?: string; // Add semester property
+}

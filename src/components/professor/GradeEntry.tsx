@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -44,6 +43,20 @@ const mockStudents: Student[] = [
     name: 'Carol Davis',
     email: 'carol.davis@university.edu',
     grades: { assignment1: 92, assignment2: 88, midterm: 95, final: 94, overall: 92 }
+  },
+  {
+    id: '4',
+    studentId: 'STU-2024-004',
+    name: 'David Wilson',
+    email: 'david.wilson@university.edu',
+    grades: { assignment1: 65, assignment2: 70, midterm: 68, final: 72, overall: 69 }
+  },
+  {
+    id: '5',
+    studentId: 'STU-2024-005',
+    name: 'Eva Green',
+    email: 'eva.green@university.edu',
+    grades: { assignment1: 90, assignment2: 88, midterm: 92, final: 85, overall: 89 }
   }
 ];
 

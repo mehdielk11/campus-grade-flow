@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, AuthState, LoginCredentials } from '@/types/auth';
 
@@ -72,6 +71,28 @@ const mockUsers: User[] = [
     lastName: 'Smith',
     role: 'student',
     studentId: 'STU002',
+    departmentId: 'management-dept',
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01'
+  },
+  {
+    id: '7',
+    email: 'STU003@supmti.ma',
+    firstName: 'Carol',
+    lastName: 'Davis',
+    role: 'student',
+    studentId: 'STU003',
+    departmentId: 'cs-dept',
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01'
+  },
+  {
+    id: '8',
+    email: 'STU004@supmti.ma',
+    firstName: 'David',
+    lastName: 'Wilson',
+    role: 'student',
+    studentId: 'STU004',
     departmentId: 'management-dept',
     createdAt: '2024-01-01',
     updatedAt: '2024-01-01'

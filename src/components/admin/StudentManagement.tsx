@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,53 +11,14 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2, GraduationCap, Search, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { FILIERES } from '@/types';
-
-interface Student {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  studentId: string;
-  filiere: string;
-  level: number;
-  gpa: number;
-  status: 'Active' | 'Inactive' | 'Graduated';
-  enrollmentDate: string;
-  password?: string;
-}
+import { useStudents, Student } from '@/contexts/StudentsContext';
+import { useFilieres } from '@/contexts/FilieresContext';
 
 const StudentManagement = () => {
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
-  const [students, setStudents] = useState<Student[]>([
-    {
-      id: '1',
-      firstName: 'Alice',
-      lastName: 'Johnson',
-      email: 'STU001@supmti.ma',
-      studentId: 'STU001',
-      filiere: 'IISI',
-      level: 3,
-      gpa: 3.8,
-      status: 'Active',
-      enrollmentDate: '2022-09-01',
-      password: 'STU001'
-    },
-    {
-      id: '2',
-      firstName: 'Bob',
-      lastName: 'Smith',
-      email: 'STU002@supmti.ma',
-      studentId: 'STU002',
-      filiere: 'MGE',
-      level: 2,
-      gpa: 3.6,
-      status: 'Active',
-      enrollmentDate: '2023-09-01',
-      password: 'STU002'
-    }
-  ]);
+  const { students, isLoading, error, fetchStudents, addStudent, updateStudent, deleteStudent } = useStudents();
+  const { filieres, isLoading: isLoadingFilieres } = useFilieres();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
@@ -68,64 +29,67 @@ const StudentManagement = () => {
 
   const statuses = ['Active', 'Inactive', 'Graduated'];
 
+  useEffect(() => {
+    fetchStudents();
+  }, [fetchStudents]);
+
   const filteredAvailableLevels = useMemo(() => {
     if (filter.filiere === 'all') {
       return [1, 2, 3, 4, 5];
     }
-    const selectedFiliere = FILIERES.find(f => f.name === filter.filiere);
+    const selectedFiliere = filieres.find(f => f.name === filter.filiere);
     return selectedFiliere ? selectedFiliere.levels : [];
-  }, [filter.filiere]);
+  }, [filter.filiere, filieres]);
 
   const filteredStudents = students.filter(student => {
     const matchesSearch = !searchTerm || 
-      student.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.studentId.toLowerCase().includes(searchTerm.toLowerCase());
+      student.student_id.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesFiliere = filter.filiere === 'all' || student.filiere === filter.filiere;
-    const matchesLevel = filter.level === 'all' || student.level.toString() === filter.level;
+    const matchesLevel = filter.level === 'all' || student.level?.toString() === filter.level;
     const matchesStatus = filter.status === 'all' || student.status === filter.status;
     
     return matchesSearch && matchesFiliere && matchesLevel && matchesStatus;
   });
 
-  const handleSave = (studentData: Partial<Student>) => {
+  const handleSave = async (studentData: Partial<Student>) => {
+    const { id, created_at, updated_at, ...dataToSave } = studentData;
+
     if (selectedStudent) {
-      setStudents(students.map(s => 
-        s.id === selectedStudent.id ? { ...s, ...studentData } : s
-      ));
+      await updateStudent(selectedStudent.id, dataToSave);
       toast({ title: "Student updated successfully" });
     } else {
-      const newStudent = { 
-        id: Date.now().toString(), 
-        password: studentData.password || studentData.studentId || 'default123',
-        ...studentData 
-      } as Student;
-      setStudents([...students, newStudent]);
+      if (!dataToSave.first_name || !dataToSave.last_name || !dataToSave.email || !dataToSave.student_id || !dataToSave.filiere || dataToSave.level === undefined || !dataToSave.status || !dataToSave.enrollment_date) {
+         toast({ title: "Missing required fields", variant: "destructive" });
+         return;
+      }
+       await addStudent(dataToSave as Omit<Student, 'id' | 'created_at' | 'updated_at'>);
       toast({ title: "Student created successfully" });
     }
     setIsDialogOpen(false);
     setSelectedStudent(null);
   };
 
-  const handleDelete = (id: string, studentName: string) => {
-    setStudents(students.filter(s => s.id !== id));
+  const handleDelete = async (id: string, studentName: string) => {
+    await deleteStudent(id);
     toast({ title: `Student "${studentName}" deleted successfully` });
   };
 
-  const canManagePasswords = currentUser?.role === 'super_admin' || currentUser?.role === 'administrator';
+  const canManagePasswords = false;
 
   const StudentForm = () => {
     const [formData, setFormData] = useState<Partial<Student>>(selectedStudent || { 
-      filiere: FILIERES[0].name, 
+      filiere: filieres.length > 0 ? filieres[0].name : '',
       level: 1, 
       status: 'Active',
-      password: ''
     });
 
-    const selectedFiliere = FILIERES.find(f => f.name === formData.filiere);
-    const availableLevels = selectedFiliere ? selectedFiliere.levels : [1, 2, 3];
+    const selectedFiliere = filieres.find(f => f.name === formData.filiere);
+    const availableLevels = selectedFiliere ? selectedFiliere.levels : [];
+    const numericAvailableLevels = availableLevels.filter(level => typeof level === 'number') as number[];
 
     return (
       <div className="space-y-4">
@@ -134,16 +98,16 @@ const StudentManagement = () => {
             <Label htmlFor="firstName">First Name</Label>
             <Input
               id="firstName"
-              value={formData.firstName || ''}
-              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+              value={formData.first_name || ''}
+              onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
             />
           </div>
           <div>
             <Label htmlFor="lastName">Last Name</Label>
             <Input
               id="lastName"
-              value={formData.lastName || ''}
-              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+              value={formData.last_name || ''}
+              onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
             />
           </div>
         </div>
@@ -153,8 +117,9 @@ const StudentManagement = () => {
             <Label htmlFor="studentId">Student ID</Label>
             <Input
               id="studentId"
-              value={formData.studentId || ''}
-              onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
+              value={formData.student_id || ''}
+              onChange={(e) => setFormData({ ...formData, student_id: e.target.value })}
+              disabled={!!selectedStudent}
             />
           </div>
           <div>
@@ -164,6 +129,7 @@ const StudentManagement = () => {
               type="email"
               value={formData.email || ''}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              disabled={!!selectedStudent}
             />
           </div>
         </div>
@@ -172,21 +138,22 @@ const StudentManagement = () => {
           <div>
             <Label htmlFor="filiere">Filière</Label>
             <Select
-              value={formData.filiere || FILIERES[0].name}
+              value={formData.filiere || ''}
               onValueChange={(value) => {
-                const selectedFil = FILIERES.find(f => f.name === value);
+                const selectedFil = filieres.find(f => f.name === value);
                 setFormData({ 
-                  ...formData, 
+                  ...formData,
                   filiere: value,
-                  level: selectedFil ? selectedFil.levels[0] : 1
+                  level: selectedFil && selectedFil.levels.length > 0 ? selectedFil.levels[0] : undefined
                 });
               }}
+              disabled={isLoadingFilieres}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select filière" />
               </SelectTrigger>
               <SelectContent>
-                {FILIERES.map((filiere) => (
+                {filieres.map((filiere) => (
                   <SelectItem key={filiere.id} value={filiere.name}>
                     {filiere.name}
                   </SelectItem>
@@ -197,23 +164,37 @@ const StudentManagement = () => {
           <div>
             <Label htmlFor="level">Level</Label>
             <Select
-              value={formData.level?.toString() || '1'}
+              value={formData.level?.toString() || ''}
               onValueChange={(value) => setFormData({ ...formData, level: parseInt(value) })}
+              disabled={!formData.filiere}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select level" />
               </SelectTrigger>
               <SelectContent>
-                {availableLevels.map((level) => (
+                {numericAvailableLevels.map((level) => (
                   <SelectItem key={level} value={level.toString()}>Level {level}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div>
+            <Label htmlFor="gpa">GPA</Label>
+            <Input
+              id="gpa"
+              type="number"
+              step="0.01"
+              value={formData.gpa || ''}
+              onChange={(e) => setFormData({ ...formData, gpa: parseFloat(e.target.value) })}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
             <Label htmlFor="status">Status</Label>
             <Select
-              value={formData.status || 'Active'}
+              value={formData.status || ''}
               onValueChange={(value) => setFormData({ ...formData, status: value as Student['status'] })}
             >
               <SelectTrigger>
@@ -221,76 +202,29 @@ const StudentManagement = () => {
               </SelectTrigger>
               <SelectContent>
                 {statuses.map((status) => (
-                  <SelectItem key={status} value={status}>{status}</SelectItem>
+                  <SelectItem key={status} value={status}>
+                    {status}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+          <div>
+            <Label htmlFor="enrollmentDate">Enrollment Date</Label>
+            <Input
+              id="enrollmentDate"
+              type="date"
+              value={formData.enrollment_date || ''}
+              onChange={(e) => setFormData({ ...formData, enrollment_date: e.target.value })}
+            />
+          </div>
         </div>
 
-        <div>
-          <Label htmlFor="gpa">GPA</Label>
-          <Input
-            id="gpa"
-            type="number"
-            step="0.1"
-            min="0"
-            max="4.0"
-            value={formData.gpa || ''}
-            onChange={(e) => setFormData({ ...formData, gpa: parseFloat(e.target.value) })}
-          />
+        <div className="flex justify-end">
+          <Button onClick={() => handleSave(formData)}>
+            {selectedStudent ? 'Update Student' : 'Add Student'}
+          </Button>
         </div>
-
-        {canManagePasswords && (
-          <>
-            {selectedStudent && (
-              <div>
-                <Label>Current Password</Label>
-                <div className="flex items-center space-x-2">
-                  <Input
-                    type={showCurrentPassword ? "text" : "password"}
-                    value={selectedStudent.password || ''}
-                    readOnly
-                    className="bg-gray-50"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                  >
-                    {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            <div>
-              <Label htmlFor="password">{selectedStudent ? 'New Password (optional)' : 'Password'}</Label>
-              <div className="flex items-center space-x-2">
-                <Input
-                  id="password"
-                  type={showNewPassword ? "text" : "password"}
-                  value={formData.password || ''}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder={selectedStudent ? "Leave blank to keep current password" : "Enter password (defaults to Student ID)"}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowNewPassword(!showNewPassword)}
-                >
-                  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
-              </div>
-            </div>
-          </>
-        )}
-
-        <Button onClick={() => handleSave(formData)} className="w-full">
-          {selectedStudent ? 'Update Student' : 'Create Student'}
-        </Button>
       </div>
     );
   };
@@ -299,158 +233,153 @@ const StudentManagement = () => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle className="flex items-center gap-2">
-              <GraduationCap className="h-5 w-5" />
-              Student Management
-            </CardTitle>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <CardTitle>Student Management</CardTitle>
+          <CardDescription>Manage student information</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between mb-4">
+            <div className="relative w-full max-w-sm">
+              <Search className="absolute left-2 top-3 h-4 w-4 text-gray-500" />
+              <Input
+                type="text"
+                placeholder="Search students..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+            <div className="flex items-center space-x-4">
+              <Select
+                value={filter.filiere}
+                onValueChange={(value) => setFilter({ ...filter, filiere: value })}
+                disabled={isLoadingFilieres}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filter by Filière" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Filières</SelectItem>
+                  {filieres.map((filiere) => (
+                    <SelectItem key={filiere.id} value={filiere.name}>
+                      {filiere.name.startsWith('IISI') ? filiere.name : filiere.name.replace(/ \(BAC\+3\)| \(BAC\+5\)/g, '')}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={filter.level}
+                onValueChange={(value) => setFilter({ ...filter, level: value })}
+                disabled={filter.filiere === 'all' || filteredAvailableLevels.length === 0}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filter by Level" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Levels</SelectItem>
+                   {filteredAvailableLevels.map((level) => (
+                    <SelectItem key={level} value={level.toString()}>Level {level}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+               <Select
+                value={filter.status}
+                onValueChange={(value) => setFilter({ ...filter, status: value })}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filter by Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                   {statuses.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {status}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button onClick={() => setSelectedStudent(null)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Student
+                <Button variant="default" onClick={() => setSelectedStudent(null)}>
+                  <Plus className="mr-2 h-4 w-4" /> Add New Student
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="sm:max-w-[600px]">
                 <DialogHeader>
-                  <DialogTitle>
-                    {selectedStudent ? 'Edit Student' : 'Add New Student'}
-                  </DialogTitle>
+                  <DialogTitle>{selectedStudent ? 'Edit Student' : 'Add New Student'}</DialogTitle>
                 </DialogHeader>
                 <StudentForm />
               </DialogContent>
             </Dialog>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4 mb-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search students..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            
-            <Select
-              value={filter.filiere}
-              onValueChange={(value) => setFilter({ ...filter, filiere: value })}
-            >
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Filter by Filière" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Filières</SelectItem>
-                {FILIERES.map((filiere) => (
-                  <SelectItem key={filiere.id} value={filiere.name}>{filiere.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            <Select
-              value={filter.level}
-              onValueChange={(value) => setFilter({ ...filter, level: value })}
-            >
-              <SelectTrigger className="w-full sm:w-32">
-                <SelectValue placeholder="Level" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Levels</SelectItem>
-                {filteredAvailableLevels.map((level) => (
-                  <SelectItem key={level} value={level.toString()}>Level {level}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            <Select
-              value={filter.status}
-              onValueChange={(value) => setFilter({ ...filter, status: value })}
-            >
-              <SelectTrigger className="w-full sm:w-32">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                {statuses.map((status) => (
-                  <SelectItem key={status} value={status}>{status}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
 
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Student ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Filière</TableHead>
-                  <TableHead>Level</TableHead>
-                  <TableHead>GPA</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredStudents.map((student) => (
-                  <TableRow key={student.id}>
-                    <TableCell className="font-medium">{student.studentId}</TableCell>
-                    <TableCell>{student.firstName} {student.lastName}</TableCell>
-                    <TableCell>{student.email}</TableCell>
-                    <TableCell>{student.filiere}</TableCell>
-                    <TableCell>Level {student.level}</TableCell>
-                    <TableCell>{student.gpa.toFixed(1)}</TableCell>
-                    <TableCell>
-                      <Badge variant={student.status === 'Active' ? 'default' : 'secondary'}>
-                        {student.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedStudent(student);
-                            setIsDialogOpen(true);
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="sm">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete the student "{student.firstName} {student.lastName}" (ID: {student.studentId}) and remove all associated data.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDelete(student.id, `${student.firstName} ${student.lastName}`)}
-                                className="bg-red-600 hover:bg-red-700"
-                              >
-                                Delete Student
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </TableCell>
+          {isLoading ? (
+            <div>Loading students...</div>
+          ) : error ? (
+            <div className="text-red-500">Error loading students: {error}</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Student ID</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Filière</TableHead>
+                    <TableHead>Level</TableHead>
+                    <TableHead>GPA</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Enrollment Date</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {filteredStudents.map((student) => (
+                    <TableRow key={student.id}>
+                      <TableCell>{student.student_id}</TableCell>
+                      <TableCell>{student.first_name} {student.last_name}</TableCell>
+                      <TableCell>{student.email}</TableCell>
+                      <TableCell>{student.filiere}</TableCell>
+                      <TableCell>{student.level}</TableCell>
+                      <TableCell>{student.gpa?.toFixed(2)}</TableCell>
+                      <TableCell>{student.status}</TableCell>
+                      <TableCell>{student.enrollment_date}</TableCell>
+                      <TableCell className="text-right">
+                         <div className="flex justify-end space-x-2">
+                          <Button variant="outline" size="sm" onClick={() => {
+                              setSelectedStudent(student);
+                              setIsDialogOpen(true);
+                            }}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="sm">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This action cannot be undone. This will permanently delete the student
+                                  and remove their data from our servers.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(student.id, `${student.first_name} ${student.last_name}`)}>Delete</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

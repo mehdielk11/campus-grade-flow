@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -70,6 +69,30 @@ const mockRoster: StudentInfo[] = [
     status: 'Inactive',
     currentGrade: null,
     attendance: 65
+  },
+  {
+    id: '5',
+    studentId: 'STU-2024-005',
+    firstName: 'Eva',
+    lastName: 'Green',
+    email: 'eva.green@university.edu',
+    phone: '(555) 567-8901',
+    enrollmentDate: '2024-08-15',
+    status: 'Active',
+    currentGrade: 85,
+    attendance: 90
+  },
+  {
+    id: '6',
+    studentId: 'STU-2024-006',
+    firstName: 'Frank',
+    lastName: 'Black',
+    email: 'frank.black@university.edu',
+    phone: '(555) 678-9012',
+    enrollmentDate: '2024-08-25',
+    status: 'Active',
+    currentGrade: 76,
+    attendance: 85
   }
 ];
 

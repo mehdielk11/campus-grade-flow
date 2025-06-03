@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,56 +9,26 @@ import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Plus, Edit, Trash2, BookOpen, Filter } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useModules } from '@/contexts/ModulesContext';
 
 interface Module {
   id: string;
   code: string;
   name: string;
-  description: string;
+  description?: string;
   credits: number;
   filiere: string;
   academicLevel: string;
   semester: string;
-  professor: string;
-  capacity: number;
-  enrolled: number;
-  status: 'active' | 'inactive';
+  professor?: string;
+  capacity?: number;
+  enrolled?: number;
+  status?: 'active' | 'inactive';
 }
 
-const mockModules: Module[] = [
-  {
-    id: '1',
-    code: 'CS101',
-    name: 'Introduction to Computer Science',
-    description: 'Fundamentals of computer science and programming',
-    credits: 3,
-    filiere: 'IISI',
-    academicLevel: 'Level 1',
-    semester: 'Semester 1',
-    professor: 'Dr. John Smith',
-    capacity: 30,
-    enrolled: 28,
-    status: 'active'
-  },
-  {
-    id: '2',
-    code: 'MGE201',
-    name: 'Business Management',
-    description: 'Principles of business management and organization',
-    credits: 4,
-    filiere: 'MGE',
-    academicLevel: 'Level 2',
-    semester: 'Semester 1',
-    professor: 'Dr. Sarah Johnson',
-    capacity: 25,
-    enrolled: 22,
-    status: 'active'
-  }
-];
-
 const ModuleManagement = () => {
-  const [modules, setModules] = useState<Module[]>(mockModules);
-  const [filteredModules, setFilteredModules] = useState<Module[]>(mockModules);
+  const { modules, addModule, updateModule, deleteModule, fetchModules } = useModules();
+  const [filteredModules, setFilteredModules] = useState<Module[]>(modules);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filters, setFilters] = useState({
@@ -103,7 +72,7 @@ const ModuleManagement = () => {
     setFilteredModules(filtered);
   }, [filters, modules]);
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!formData.code || !formData.name || !formData.filiere) {
       toast({
         title: "Validation Error",
@@ -112,20 +81,12 @@ const ModuleManagement = () => {
       });
       return;
     }
-
-    const newModule: Module = {
-      id: Date.now().toString(),
+    await addModule({
       ...formData,
       enrolled: 0
-    };
-
-    setModules([...modules, newModule]);
-    resetForm();
-    
-    toast({
-      title: "Module Added",
-      description: "New module has been successfully created.",
     });
+    resetForm();
+    await fetchModules();
   };
 
   const handleEdit = (module: Module) => {
@@ -144,7 +105,7 @@ const ModuleManagement = () => {
     });
   };
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!formData.code || !formData.name || !formData.filiere) {
       toast({
         title: "Validation Error",
@@ -153,27 +114,16 @@ const ModuleManagement = () => {
       });
       return;
     }
-
-    setModules(modules.map(module => 
-      module.id === editingId 
-        ? { ...module, ...formData }
-        : module
-    ));
-    
-    resetForm();
-    
-    toast({
-      title: "Module Updated",
-      description: "Module information has been successfully updated.",
-    });
+    if (editingId) {
+      await updateModule(editingId, formData);
+      resetForm();
+      await fetchModules();
+    }
   };
 
-  const handleDelete = (id: string, moduleName: string) => {
-    setModules(modules.filter(module => module.id !== id));
-    toast({
-      title: "Module Deleted",
-      description: `Module "${moduleName}" has been successfully removed.`,
-    });
+  const handleDelete = async (id: string, moduleName: string) => {
+    await deleteModule(id);
+    await fetchModules();
   };
 
   const resetForm = () => {
