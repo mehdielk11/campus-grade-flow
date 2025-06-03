@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { Download, TrendingUp, Users, BookOpen, Award, BarChart3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { FILIERES } from '@/types';
 
 const AdminReports = () => {
   const { toast } = useToast();
@@ -13,7 +14,7 @@ const AdminReports = () => {
   const [selectedDepartment, setSelectedDepartment] = useState('all');
   const [selectedSemester, setSelectedSemester] = useState('all');
 
-  const departments = ['Informatics', 'Management'];
+  const departments = FILIERES.map(filiere => filiere.name);
   const semesters = ['Semester 1', 'Semester 2'];
 
   const enrollmentData = [
@@ -224,8 +225,8 @@ const AdminReports = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Departments</SelectItem>
-                {departments.map((dept) => (
-                  <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                {FILIERES.map((filiere) => (
+                  <SelectItem key={filiere.id} value={filiere.name}>{filiere.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

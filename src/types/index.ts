@@ -1,4 +1,3 @@
-
 export interface SidebarProps {
   isCollapsed?: boolean;
   onToggle?: () => void;
@@ -18,7 +17,7 @@ export const FILIERES: Filiere[] = [
   { id: 'mdi', name: 'MDI', formation: 'Management et Finance', degree: 'BAC+3', levels: [1, 2, 3] },
   { id: 'facg', name: 'FACG', formation: 'Management et Finance', degree: 'BAC+5', levels: [4, 5] },
   { id: 'mri', name: 'MRI', formation: 'Management et Finance', degree: 'BAC+5', levels: [4, 5] },
-  { id: 'iisi3', name: 'IISI', formation: 'Ingénierie', degree: 'BAC+3', levels: [1, 2, 3] },
-  { id: 'iisi5', name: 'IISI', formation: 'Ingénierie', degree: 'BAC+5', levels: [4, 5] },
+  { id: 'iisi3', name: 'IISI (BAC+3)', formation: 'Ingénierie', degree: 'BAC+3', levels: [1, 2, 3] },
+  { id: 'iisi5', name: 'IISI (BAC+5)', formation: 'Ingénierie', degree: 'BAC+5', levels: [4, 5] },
   { id: 'iisrt', name: 'IISRT', formation: 'Ingénierie', degree: 'BAC+5', levels: [4, 5] },
 ];

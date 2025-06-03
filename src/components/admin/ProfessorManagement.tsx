@@ -19,7 +19,7 @@ interface Professor {
   lastName: string;
   email: string;
   employeeId: string;
-  filiere: string;
+  filiere: string[];
   specialization: string;
   status: 'Active' | 'Inactive' | 'On Leave';
   hireDate: string;
@@ -36,7 +36,7 @@ const ProfessorManagement = () => {
       lastName: 'Smith',
       email: 'jane.smith@university.edu',
       employeeId: 'PROF001',
-      filiere: 'IISI',
+      filiere: ['IISI (BAC+3)'],
       specialization: 'Machine Learning',
       status: 'Active',
       hireDate: '2020-08-15',
@@ -48,7 +48,7 @@ const ProfessorManagement = () => {
       lastName: 'Doe',
       email: 'john.doe@university.edu',
       employeeId: 'PROF002',
-      filiere: 'MGE',
+      filiere: ['MGE'],
       specialization: 'Applied Mathematics',
       status: 'Active',
       hireDate: '2019-01-10',
@@ -72,7 +72,7 @@ const ProfessorManagement = () => {
       professor.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       professor.employeeId.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesFiliere = filter.filiere === 'all' || professor.filiere === filter.filiere;
+    const matchesFiliere = filter.filiere === 'all' || professor.filiere.some(f => filter.filiere === f);
     const matchesStatus = filter.status === 'all' || professor.status === filter.status;
     
     return matchesSearch && matchesFiliere && matchesStatus;
@@ -106,10 +106,11 @@ const ProfessorManagement = () => {
 
   const ProfessorForm = () => {
     const [formData, setFormData] = useState<Partial<Professor>>(selectedProfessor || { 
-      filiere: FILIERES[0].name, 
+      filiere: [],
       status: 'Active',
       password: ''
     });
+    const [filiereDropdownOpen, setFiliereDropdownOpen] = useState(false);
 
     return (
       <div className="space-y-4">
@@ -155,21 +156,43 @@ const ProfessorManagement = () => {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label htmlFor="filiere">Filière</Label>
-            <Select
-              value={formData.filiere || FILIERES[0].name}
-              onValueChange={(value) => setFormData({ ...formData, filiere: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select filière" />
-              </SelectTrigger>
-              <SelectContent>
-                {FILIERES.map((filiere) => (
-                  <SelectItem key={filiere.id} value={filiere.name}>
-                    {filiere.name} ({filiere.degree})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="relative">
+              <button
+                type="button"
+                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm"
+                onClick={() => setFiliereDropdownOpen((open) => !open)}
+              >
+                <span className="truncate">
+                  {formData.filiere && formData.filiere.length > 0
+                    ? formData.filiere.join(', ')
+                    : 'Select filière(s)'}
+                </span>
+                <svg className="ml-2 h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clipRule="evenodd" /></svg>
+              </button>
+              {filiereDropdownOpen && (
+                <div className="absolute z-10 mt-1 w-full rounded-md border bg-white shadow-lg max-h-60 overflow-auto">
+                  {FILIERES.map((filiere) => (
+                    <label key={filiere.id} className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.filiere?.includes(filiere.name) || false}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setFormData((prev) => ({
+                            ...prev,
+                            filiere: checked
+                              ? [...(prev.filiere || []), filiere.name]
+                              : (prev.filiere || []).filter((f) => f !== filiere.name),
+                          }));
+                        }}
+                        className="mr-2"
+                      />
+                      {filiere.name.startsWith('IISI') ? filiere.name : filiere.name.replace(/ \(BAC\+3\)| \(BAC\+5\)/g, '')}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           <div>
             <Label htmlFor="status">Status</Label>
@@ -351,7 +374,7 @@ const ProfessorManagement = () => {
                     <TableCell className="font-medium">{professor.employeeId}</TableCell>
                     <TableCell>{professor.firstName} {professor.lastName}</TableCell>
                     <TableCell>{professor.email}</TableCell>
-                    <TableCell>{professor.filiere}</TableCell>
+                    <TableCell>{professor.filiere.join(', ')}</TableCell>
                     <TableCell>{professor.specialization}</TableCell>
                     <TableCell>
                       <Badge variant={professor.status === 'Active' ? 'default' : 'secondary'}>

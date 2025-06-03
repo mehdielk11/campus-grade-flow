@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -67,7 +67,14 @@ const StudentManagement = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
 
   const statuses = ['Active', 'Inactive', 'Graduated'];
-  const allLevels = [1, 2, 3, 4, 5];
+
+  const filteredAvailableLevels = useMemo(() => {
+    if (filter.filiere === 'all') {
+      return [1, 2, 3, 4, 5];
+    }
+    const selectedFiliere = FILIERES.find(f => f.name === filter.filiere);
+    return selectedFiliere ? selectedFiliere.levels : [];
+  }, [filter.filiere]);
 
   const filteredStudents = students.filter(student => {
     const matchesSearch = !searchTerm || 
@@ -181,7 +188,7 @@ const StudentManagement = () => {
               <SelectContent>
                 {FILIERES.map((filiere) => (
                   <SelectItem key={filiere.id} value={filiere.name}>
-                    {filiere.name} ({filiere.degree})
+                    {filiere.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -351,7 +358,7 @@ const StudentManagement = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Levels</SelectItem>
-                {allLevels.map((level) => (
+                {filteredAvailableLevels.map((level) => (
                   <SelectItem key={level} value={level.toString()}>Level {level}</SelectItem>
                 ))}
               </SelectContent>
