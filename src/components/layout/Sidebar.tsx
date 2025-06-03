@@ -33,9 +33,11 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { Link as RouterLink } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useSidebar } from '@/components/ui/sidebar';
 
 const Sidebar = ({ isCollapsed, onToggle }: SidebarProps & { onToggle?: () => void }) => {
   const { user, logout } = useAuth();
+  const { state } = useSidebar();
   const [open, setOpen] = React.useState(false);
   const isMobile = useMediaQuery('(max-width: 768px)');
 
@@ -66,10 +68,12 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps & { onToggle?: () => vo
   ];
 
   const renderSidebarContent = () => (
-    <div className="flex flex-col h-full">
+    <div className={`flex flex-col h-full transition-all duration-300 ${state === 'collapsed' ? 'w-16' : 'w-64'}`}>
       <div className="flex items-center gap-3 px-4 pt-6 pb-4">
         <GraduationCap className="h-8 w-8 text-blue-600" strokeWidth={2.2} />
-        <span className="font-bold text-lg tracking-tight text-gray-900">Portail SupMTI</span>
+        {state !== 'collapsed' && (
+          <span className="font-bold text-lg tracking-tight text-gray-900">Portail SupMTI</span>
+        )}
       </div>
       <ScrollArea className="flex-1 px-3">
         <div className="space-y-1">
@@ -80,7 +84,9 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps & { onToggle?: () => vo
               className="group flex items-center space-x-3 rounded-md p-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
             >
               <item.icon className="h-4 w-4" />
-              <span className={cn("text-sm font-medium", isCollapsed && "hidden")}>{item.name}</span>
+              {state !== 'collapsed' && (
+                <span className="text-sm font-medium">{item.name}</span>
+              )}
             </RouterLink>
           ))}
         </div>
@@ -91,11 +97,13 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps & { onToggle?: () => vo
             <AvatarImage src="https://github.com/shadcn.png" alt="Avatar" />
             <AvatarFallback>CN</AvatarFallback>
           </Avatar>
-          <span className={cn("text-sm font-medium", isCollapsed && "hidden")}>{user?.firstName} {user?.lastName}</span>
+          {state !== 'collapsed' && (
+            <span className="text-sm font-medium">{user?.firstName} {user?.lastName}</span>
+          )}
         </RouterLink>
         <Button variant="outline" size="sm" className="w-full flex items-center gap-2" onClick={logout}>
           <LogOut className="h-4 w-4" />
-          <span>Logout</span>
+          {state !== 'collapsed' && <span>Logout</span>}
         </Button>
       </div>
     </div>
@@ -123,7 +131,7 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps & { onToggle?: () => vo
   }
 
   return (
-    <div className={`flex flex-col h-screen border-r border-r-muted shrink-0 transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
+    <div className={`flex flex-col h-screen border-r border-r-muted shrink-0 transition-all duration-300 ${state === 'collapsed' ? 'w-16' : 'w-64'}`}>
       {renderSidebarContent()}
     </div>
   );
