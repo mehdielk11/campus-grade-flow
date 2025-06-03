@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -93,17 +92,6 @@ const TranscriptDownloader = () => {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Total Credits</CardTitle>
-            <CardDescription>Credits Earned</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-600">{getTotalCredits()}</div>
-            <p className="text-sm text-gray-500 mt-1">credit hours</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
             <CardTitle className="text-lg">Academic Standing</CardTitle>
             <CardDescription>Current Status</CardDescription>
           </CardHeader>
@@ -167,7 +155,6 @@ const TranscriptDownloader = () => {
                           <Badge variant="outline" className="text-xs">{course.code}</Badge>
                           <span className="font-medium">{course.name}</span>
                         </div>
-                        <p className="text-sm text-gray-600">{course.credits} credits</p>
                       </div>
                       <div className="text-right">
                         <div className="font-semibold text-lg">{course.grade}</div>

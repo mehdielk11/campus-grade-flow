@@ -58,21 +58,45 @@ const GradeManagement = () => {
 
   const semesters = ['Semester 1', 'Semester 2'];
 
+  // Use filieres context as the source of truth for filiere options
+  const filiereOptions = useMemo(() => {
+    if (filieres && filieres.length > 0) {
+      return filieres.map(f => f.code).filter(Boolean);
+    }
+    // fallback: get unique codes from grades if filieres is empty
+    const codes = grades.map(g => g.modules?.filiere).filter(Boolean);
+    return Array.from(new Set(codes));
+  }, [filieres, grades]);
+
   const getAvailableLevels = useMemo(() => () => {
     if (selectedFiliere === 'all') {
-      return [1, 2, 3, 4, 5]; // Default levels if no filiere is selected
+      return [1, 2, 3, 4, 5];
     }
-    // Find the selected filiere by its ID (assuming selectedFiliere state stores ID)
-    const filiere = filieres.find(f => f.id === selectedFiliere); 
-    return filiere && filiere.levels ? filiere.levels : [];
-  }, [selectedFiliere, filieres]); // Add filieres to dependency array
+    // Find the first grade with this filiere and get its module's academic_level
+    const grade = grades.find(g => g.modules?.filiere === selectedFiliere);
+    return grade && grade.modules?.academic_level ? [parseInt(grade.modules.academic_level.replace('Level ', ''))] : [];
+  }, [selectedFiliere, grades]);
 
   const filteredGrades = useMemo(() => {
     let filtered = grades;
 
     if (selectedFiliere !== 'all') {
-      // Filter by filiere ID stored in the module object related to the grade
-      filtered = filtered.filter(grade => grade.modules?.filiere === selectedFiliere);
+      filtered = filtered.filter(grade => {
+        const moduleFiliere = grade.modules?.filiere;
+        const studentFiliere = grade.students?.filiere;
+        return (
+          (moduleFiliere && (
+            moduleFiliere === selectedFiliere ||
+            moduleFiliere.toUpperCase() === selectedFiliere.toUpperCase() ||
+            moduleFiliere.toLowerCase() === selectedFiliere.toLowerCase()
+          )) ||
+          (studentFiliere && (
+            studentFiliere === selectedFiliere ||
+            studentFiliere.toUpperCase() === selectedFiliere.toUpperCase() ||
+            studentFiliere.toLowerCase() === selectedFiliere.toLowerCase()
+          ))
+        );
+      });
     }
 
     if (selectedLevel !== 'all') {
@@ -195,6 +219,20 @@ const GradeManagement = () => {
   // Combine loading states from all contexts
   const overallLoading = isLoadingGrades || isLoadingFilieres || isLoadingModules || isLoadingStudents;
 
+  useEffect(() => {
+    // Debug: log all grades and their module.filiere and student.filiere
+    if (grades && grades.length > 0) {
+      console.table(grades.map(g => ({
+        id: g.id,
+        moduleFiliere: g.modules?.filiere,
+        studentFiliere: g.students?.filiere,
+        moduleCode: g.modules?.code,
+        moduleName: g.modules?.name,
+        student: g.students?.student_id,
+      })));
+    }
+  }, [grades]);
+
   if (overallLoading) {
     return <div>Loading data...</div>;
   }
@@ -315,16 +353,14 @@ const GradeManagement = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-6">
             <div>
               <Label className="text-sm font-medium">Filière</Label>
-              <Select value={selectedFiliere} onValueChange={setSelectedFiliere} disabled={isLoadingFilieres}> {/* Disable while loading filieres */}
+              <Select value={selectedFiliere} onValueChange={setSelectedFiliere} disabled={isLoadingFilieres}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select Filière" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Filières</SelectItem>
-                  {filieres.map(filiere => (
-                    <SelectItem key={filiere.id} value={filiere.id}>
-                      {filiere.name}
-                    </SelectItem>
+                  {filiereOptions.map(code => (
+                    <SelectItem key={code} value={code}>{code}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -381,7 +417,7 @@ const GradeManagement = () => {
                   <SelectItem value="all">All Modules</SelectItem>
                   {(modules as Module[])
                      .filter(module => 
-                        (selectedFiliere === 'all' || module.filiere === selectedFiliere) &&
+                        (selectedFiliere === 'all' || module.filiere === selectedFiliere || module.filiere?.toUpperCase() === selectedFiliere) &&
                         (selectedLevel === 'all' || module.academic_level === `Level ${selectedLevel}`) &&
                         (selectedSemester === 'all' || module.semester === selectedSemester)
                      )

@@ -10,24 +10,25 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus, Edit, Trash2, BookOpen, Filter } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useModules } from '@/contexts/ModulesContext';
+import { useProfessors } from '@/contexts/ProfessorsContext';
 
 interface Module {
   id: string;
   code: string;
   name: string;
   description?: string;
-  credits: number;
   filiere: string;
   academic_level?: string;
   semester: string;
   professor?: string;
   capacity?: number;
-  enrolled?: number;
   status?: 'active' | 'inactive';
+  professor_id?: string;
 }
 
 const ModuleManagement = () => {
   const { modules, addModule, updateModule, deleteModule, fetchModules } = useModules();
+  const { professors, isLoading: isLoadingProfessors } = useProfessors();
   const [filteredModules, setFilteredModules] = useState<Module[]>(modules);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -40,17 +41,16 @@ const ModuleManagement = () => {
     code: '',
     name: '',
     description: '',
-    credits: 3,
     filiere: 'MGE',
     academic_level: 'Level 1',
     semester: 'Semester 1',
-    professor: '',
+    professor_id: '',
     capacity: 30,
     status: 'active' as 'active' | 'inactive'
   });
   const { toast } = useToast();
 
-  const filieres = ['MGE', 'MDI', 'FACG', 'MRI', 'IISI', 'IISRT'];
+  const filieres = ['MGE', 'MDI', 'FACG', 'MRI', 'IISI3', 'IISI5', 'IISRT'];
   const academicLevels = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'];
   const semesters = ['Semester 1', 'Semester 2'];
 
@@ -81,10 +81,18 @@ const ModuleManagement = () => {
       });
       return;
     }
-    await addModule({
-      ...formData,
-      enrolled: 0
-    });
+    const modulePayload = {
+      code: formData.code,
+      name: formData.name,
+      description: formData.description,
+      filiere: formData.filiere,
+      academic_level: formData.academic_level,
+      semester: formData.semester,
+      capacity: formData.capacity,
+      status: formData.status,
+      professor_id: formData.professor_id || null,
+    };
+    await addModule(modulePayload);
     resetForm();
     await fetchModules();
   };
@@ -95,11 +103,10 @@ const ModuleManagement = () => {
       code: module.code,
       name: module.name,
       description: module.description,
-      credits: module.credits,
       filiere: module.filiere,
       academic_level: module.academic_level,
       semester: module.semester,
-      professor: module.professor,
+      professor_id: module.professor_id || '',
       capacity: module.capacity,
       status: module.status
     });
@@ -115,7 +122,18 @@ const ModuleManagement = () => {
       return;
     }
     if (editingId) {
-      await updateModule(editingId, formData);
+      const modulePayload = {
+        code: formData.code,
+        name: formData.name,
+        description: formData.description,
+        filiere: formData.filiere,
+        academic_level: formData.academic_level,
+        semester: formData.semester,
+        capacity: formData.capacity,
+        status: formData.status,
+        professor_id: formData.professor_id || null,
+      };
+      await updateModule(editingId, modulePayload);
       resetForm();
       await fetchModules();
     }
@@ -131,11 +149,10 @@ const ModuleManagement = () => {
       code: '',
       name: '',
       description: '',
-      credits: 3,
       filiere: 'MGE',
       academic_level: 'Level 1',
       semester: 'Semester 1',
-      professor: '',
+      professor_id: '',
       capacity: 30,
       status: 'active'
     });
@@ -298,17 +315,6 @@ const ModuleManagement = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="credits">Credits</Label>
-                <Input
-                  id="credits"
-                  type="number"
-                  min="1"
-                  max="10"
-                  value={formData.credits}
-                  onChange={(e) => setFormData({ ...formData, credits: parseInt(e.target.value) || 3 })}
-                />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="capacity">Capacity</Label>
                 <Input
                   id="capacity"
@@ -333,13 +339,23 @@ const ModuleManagement = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="professor">Professor</Label>
-              <Input
-                id="professor"
-                value={formData.professor}
-                onChange={(e) => setFormData({ ...formData, professor: e.target.value })}
-                placeholder="Enter professor name"
-              />
+              <Label htmlFor="professor_id">Professor</Label>
+              <Select
+                value={formData.professor_id}
+                onValueChange={(value) => setFormData({ ...formData, professor_id: value })}
+                disabled={isLoadingProfessors}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select professor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {professors.map((prof) => (
+                    <SelectItem key={prof.id} value={prof.id}>
+                      {prof.first_name} {prof.last_name} ({prof.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -366,97 +382,88 @@ const ModuleManagement = () => {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredModules.map((module) => (
-          <Card key={module.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="bg-green-100 p-2 rounded-lg">
-                    <BookOpen className="h-5 w-5 text-green-600" />
+        {filteredModules.map((module) => {
+          const professor = professors.find((p) => p.id === module.professor_id);
+          return (
+            <Card key={module.id} className="hover:shadow-lg transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-green-100 p-2 rounded-lg">
+                      <BookOpen className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">{module.name}</CardTitle>
+                      <CardDescription>{module.code}</CardDescription>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle className="text-lg">{module.name}</CardTitle>
-                    <CardDescription>{module.code}</CardDescription>
+                  <Badge variant={module.status === 'active' ? 'default' : 'secondary'}>
+                    {module.status}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-gray-600">{module.description}</p>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Filière:</span>
+                    <span className="font-medium">{module.filiere}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Level:</span>
+                    <Badge variant="outline">{module.academic_level}</Badge>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Semester:</span>
+                    <span className="font-medium">{module.semester}</span>
                   </div>
                 </div>
-                <Badge variant={module.status === 'active' ? 'default' : 'secondary'}>
-                  {module.status}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-sm text-gray-600">{module.description}</p>
-              
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Filière:</span>
-                  <span className="font-medium">{module.filiere}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Level:</span>
-                  <Badge variant="outline">{module.academic_level}</Badge>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Semester:</span>
-                  <span className="font-medium">{module.semester}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Credits:</span>
-                  <span className="font-medium">{module.credits}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Professor:</span>
-                  <span className="font-medium">{module.professor}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Enrollment:</span>
-                  <span className="font-medium">{module.enrolled}/{module.capacity}</span>
-                </div>
-              </div>
 
-              <div className="flex gap-2 pt-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleEdit(module)}
-                  className="flex items-center gap-1"
-                >
-                  <Edit className="h-3 w-3" />
-                  Edit
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-1 text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                      Delete
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete the module "{module.name}" ({module.code}) and remove all associated data.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => handleDelete(module.id, module.name)}
-                        className="bg-red-600 hover:bg-red-700"
+                <div className="flex gap-2 pt-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEdit(module)}
+                    className="flex items-center gap-1"
+                  >
+                    <Edit className="h-3 w-3" />
+                    Edit
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-1 text-red-600 hover:text-red-700"
                       >
-                        Delete Module
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                        <Trash2 className="h-3 w-3" />
+                        Delete
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently delete the module "{module.name}" ({module.code}) and remove all associated data.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleDelete(module.id, module.name)}
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          Delete Module
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );

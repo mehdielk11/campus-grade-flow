@@ -7,14 +7,12 @@ export interface Module {
   code: string;
   name: string;
   description?: string;
-  credits: number;
   filiere: string;
   academic_level?: string;
   academicLevel?: string;
   semester: string;
   professor?: string;
   capacity?: number;
-  enrolled?: number;
   status?: 'active' | 'inactive';
   created_at?: string;
   updated_at?: string;
@@ -24,7 +22,7 @@ interface ModulesContextType {
   modules: Module[];
   isLoading: boolean;
   error: string | null;
-  fetchModules: () => Promise<void>;
+  fetchModules: (limit?: number, offset?: number) => Promise<void>;
   addModule: (moduleData: Omit<Module, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
   updateModule: (id: string, moduleData: Partial<Omit<Module, 'id' | 'created_at' | 'updated_at' | 'code'>>) => Promise<void>;
   deleteModule: (id: string) => Promise<void>;
@@ -38,9 +36,12 @@ export const ModulesProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const fetchModules = async () => {
+  const fetchModules = async (limit?: number, offset?: number) => {
     setIsLoading(true);
-    const { data, error } = await supabase.from('modules').select('*');
+    let query = supabase.from('modules').select('id, code, name, description, filiere, academic_level, semester, professor_id, capacity, status, created_at, updated_at');
+    if (typeof limit === 'number') query = query.limit(limit);
+    if (typeof offset === 'number') query = query.range(offset, offset + (limit ? limit - 1 : 9));
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching modules:', error);

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -79,16 +78,6 @@ const StudentDetailsDialog = ({ student, isOpen, onClose }: StudentDetailsDialog
 
           <div className="border-t pt-4">
             <h3 className="text-lg font-semibold mb-3">Academic Performance</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <Label className="text-sm font-medium text-gray-500">Credits Completed</Label>
-                <p className="text-xl font-semibold">24</p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <Label className="text-sm font-medium text-gray-500">Courses Enrolled</Label>
-                <p className="text-xl font-semibold">6</p>
-              </div>
-            </div>
           </div>
         </div>
       </DialogContent>

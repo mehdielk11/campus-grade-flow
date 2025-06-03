@@ -1,4 +1,3 @@
-
 export interface Department {
   id: string;
   name: string;
@@ -15,7 +14,6 @@ export interface Module {
   code: string;
   description?: string;
   departmentId: string;
-  credits: number;
   semester: number;
   createdAt: string;
   updatedAt: string;
@@ -30,7 +28,6 @@ export interface Course {
   academicYear: string;
   semester: number;
   maxStudents: number;
-  enrolledStudents: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -47,12 +44,4 @@ export interface Grade {
   comments?: string;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface Enrollment {
-  id: string;
-  studentId: string;
-  courseId: string;
-  enrollmentDate: string;
-  status: 'active' | 'completed' | 'dropped';
 }

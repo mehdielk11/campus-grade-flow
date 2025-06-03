@@ -11,7 +11,6 @@ export interface Student {
   student_id: string;
   filiere: string; // Consider linking to filieres table later
   level: number;
-  semester?: string; // Add semester property to the interface
   gpa: number;
   status: 'Active' | 'Inactive' | 'Graduated';
   enrollment_date: string; // Or Date type if you prefer
@@ -23,7 +22,7 @@ interface StudentsContextType {
   students: Student[];
   isLoading: boolean;
   error: string | null;
-  fetchStudents: () => Promise<void>;
+  fetchStudents: (limit?: number, offset?: number) => Promise<void>;
   addStudent: (studentData: Omit<Student, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
   updateStudent: (id: string, studentData: Partial<Omit<Student, 'id' | 'created_at' | 'updated_at' | 'email' | 'student_id'>>) => Promise<void>;
   deleteStudent: (id: string) => Promise<void>;
@@ -37,9 +36,12 @@ export const StudentsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const fetchStudents = useCallback(async () => {
+  const fetchStudents = useCallback(async (limit?: number, offset?: number) => {
     setIsLoading(true);
-    const { data, error } = await supabase.from('students').select('*');
+    let query = supabase.from('students').select('id, first_name, last_name, email, student_id, filiere, level, gpa, status, enrollment_date, created_at, updated_at');
+    if (typeof limit === 'number') query = query.limit(limit);
+    if (typeof offset === 'number') query = query.range(offset, offset + (limit ? limit - 1 : 9));
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching students:', error);

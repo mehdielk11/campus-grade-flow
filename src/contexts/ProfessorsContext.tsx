@@ -10,21 +10,20 @@ export interface Professor {
   last_name: string;
   email: string;
   professor_id: string;
-  department?: string; // Consider linking to departments table later
-  filieres?: string[]; // Array of filiere IDs or names
+  filieres?: string[];
   status: 'Active' | 'Inactive' | 'On Leave';
-  specialization?: string; // Added specialization
-  hire_date?: string; // Added hire_date (assuming string format for now)
-  password?: string; // Add password field
-  created_at: string; // Or Date type
-  updated_at: string; // Or Date type
+  specialization?: string;
+  hire_date?: string;
+  password?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface ProfessorsContextType {
   professors: Professor[];
   isLoading: boolean;
   error: string | null;
-  fetchProfessors: () => Promise<void>;
+  fetchProfessors: (limit?: number, offset?: number) => Promise<void>;
   addProfessor: (professorData: Omit<Professor, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
   updateProfessor: (id: string, professorData: Partial<Omit<Professor, 'id' | 'created_at' | 'updated_at' | 'email' | 'professor_id'>>) => Promise<void>;
   deleteProfessor: (id: string) => Promise<void>;
@@ -38,10 +37,12 @@ export const ProfessorsProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const fetchProfessors = useCallback(async () => {
+  const fetchProfessors = useCallback(async (limit?: number, offset?: number) => {
     setIsLoading(true);
-    // Explicitly select professor_id, filiere_ids, password and fallback to employee_id if needed
-    const { data, error } = await supabase.from('professors').select('*, professor_id, filiere_ids, password');
+    let query = supabase.from('professors').select('id, first_name, last_name, email, professor_id, filiere_ids, status, specialization, hire_date, created_at, updated_at');
+    if (typeof limit === 'number') query = query.limit(limit);
+    if (typeof offset === 'number') query = query.range(offset, offset + (limit ? limit - 1 : 9));
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching professors:', error);

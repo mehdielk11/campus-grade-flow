@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -119,17 +118,6 @@ const StudentDashboard = () => {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-medium text-gray-700">Total Credits</CardTitle>
-            <p className="text-sm text-gray-500">Credits Completed</p>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-600">{mockData.totalCredits}</div>
-            <p className="text-sm text-gray-500">credit hours</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
             <CardTitle className="text-lg font-medium text-gray-700">Courses</CardTitle>
             <p className="text-sm text-gray-500">Enrolled This Semester</p>
           </CardHeader>
@@ -155,7 +143,6 @@ const StudentDashboard = () => {
                   <span className="text-lg font-semibold text-gray-900">{course.name}</span>
                 </div>
                 <p className="text-sm text-gray-600">{course.department}</p>
-                <p className="text-sm text-gray-500">{course.credits} credits</p>
               </div>
               <div className="flex items-center gap-4">
                 <div className="text-right">

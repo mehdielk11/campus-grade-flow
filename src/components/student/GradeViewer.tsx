@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +10,6 @@ interface Grade {
   courseName: string;
   grade: number;
   letterGrade: string;
-  credits: number;
   semester: string;
   year: string;
 }
@@ -24,7 +22,6 @@ const mockGrades: Grade[] = [
     courseName: 'Introduction to Programming',
     grade: 85,
     letterGrade: 'A',
-    credits: 3,
     semester: 'Fall',
     year: '2024'
   },
@@ -35,7 +32,6 @@ const mockGrades: Grade[] = [
     courseName: 'Calculus II',
     grade: 78,
     letterGrade: 'B+',
-    credits: 4,
     semester: 'Fall',
     year: '2024'
   },
@@ -46,7 +42,6 @@ const mockGrades: Grade[] = [
     courseName: 'Academic Writing',
     grade: 92,
     letterGrade: 'A',
-    credits: 2,
     semester: 'Fall',
     year: '2024'
   }
@@ -62,8 +57,8 @@ const GradeViewer = () => {
   };
 
   const calculateGPA = () => {
-    const totalPoints = mockGrades.reduce((sum, grade) => sum + (grade.grade * grade.credits), 0);
-    const totalCredits = mockGrades.reduce((sum, grade) => sum + grade.credits, 0);
+    const totalPoints = mockGrades.reduce((sum, grade) => sum + (grade.grade * 4), 0);
+    const totalCredits = mockGrades.length;
     return (totalPoints / totalCredits / 20).toFixed(2); // Convert to 4.0 scale
   };
 
@@ -78,19 +73,6 @@ const GradeViewer = () => {
           <CardContent>
             <div className="text-3xl font-bold text-blue-600">{calculateGPA()}</div>
             <p className="text-sm text-gray-500 mt-1">out of 4.0</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Total Credits</CardTitle>
-            <CardDescription>Credits Completed</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-600">
-              {mockGrades.reduce((sum, grade) => sum + grade.credits, 0)}
-            </div>
-            <p className="text-sm text-gray-500 mt-1">credit hours</p>
           </CardContent>
         </Card>
 
@@ -121,7 +103,6 @@ const GradeViewer = () => {
                     <h3 className="font-semibold">{grade.courseName}</h3>
                   </div>
                   <p className="text-sm text-gray-600">{grade.moduleName}</p>
-                  <p className="text-xs text-gray-500">{grade.credits} credits</p>
                 </div>
                 
                 <div className="text-right space-y-2">

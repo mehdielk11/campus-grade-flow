@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,22 +16,20 @@ interface ModuleAssignment {
   filiere: string;
   level: string;
   semester: string;
-  credits: number;
 }
 
 interface Module {
   id: string;
   code: string;
   name: string;
-  credits: number;
 }
 
 const mockModules: Module[] = [
-  { id: '1', code: 'CS101', name: 'Introduction to Computer Science', credits: 3 },
-  { id: '2', code: 'MGE201', name: 'Business Management', credits: 4 },
-  { id: '3', code: 'AI401', name: 'Introduction to Artificial Intelligence', credits: 4 },
-  { id: '4', code: 'AI402', name: 'Advanced Artificial Intelligence', credits: 4 },
-  { id: '5', code: 'WEB301', name: 'Web Development', credits: 3 },
+  { id: '1', code: 'CS101', name: 'Introduction to Computer Science' },
+  { id: '2', code: 'MGE201', name: 'Business Management' },
+  { id: '3', code: 'AI401', name: 'Introduction to Artificial Intelligence' },
+  { id: '4', code: 'AI402', name: 'Advanced Artificial Intelligence' },
+  { id: '5', code: 'WEB301', name: 'Web Development' },
 ];
 
 const mockAssignments: ModuleAssignment[] = [
@@ -44,7 +41,6 @@ const mockAssignments: ModuleAssignment[] = [
     filiere: 'IISRT',
     level: 'Level 4',
     semester: 'Semester 1',
-    credits: 4
   },
   {
     id: '2',
@@ -54,7 +50,6 @@ const mockAssignments: ModuleAssignment[] = [
     filiere: 'IISRT',
     level: 'Level 4',
     semester: 'Semester 2',
-    credits: 4
   }
 ];
 
@@ -135,7 +130,6 @@ const ModuleAssignment = () => {
       filiere: formData.filiere,
       level: formData.level,
       semester: formData.semester,
-      credits: selectedModule.credits
     };
 
     setAssignments([...assignments, newAssignment]);
@@ -356,10 +350,6 @@ const ModuleAssignment = () => {
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Semester:</span>
                   <Badge variant="outline">{assignment.semester}</Badge>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Credits:</span>
-                  <span className="font-medium">{assignment.credits}</span>
                 </div>
               </div>
 

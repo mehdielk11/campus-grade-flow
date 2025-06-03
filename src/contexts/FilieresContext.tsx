@@ -7,7 +7,7 @@ interface FilieresContextType {
   filieres: Filiere[];
   isLoading: boolean;
   error: string | null;
-  fetchFilieres: () => Promise<void>;
+  fetchFilieres: (limit?: number, offset?: number) => Promise<void>;
   addFiliere: (filiereData: Omit<Filiere, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
   updateFiliere: (id: string, filiereData: Partial<Omit<Filiere, 'id' | 'created_at' | 'updated_at' | 'code' | 'name'>>) => Promise<void>; // Exclude unique fields from update
   deleteFiliere: (id: string) => Promise<void>;
@@ -21,10 +21,13 @@ export const FilieresProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const fetchFilieres = async () => {
+  const fetchFilieres = async (limit?: number, offset?: number) => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.from('filieres').select('*');
+      let query = supabase.from('filieres').select('id, code, name, formation, degree, levels, status, created_at, updated_at');
+      if (typeof limit === 'number') query = query.limit(limit);
+      if (typeof offset === 'number') query = query.range(offset, offset + (limit ? limit - 1 : 9));
+      const { data, error } = await query;
       if (error) {
         console.error('Error fetching filieres:', error);
         setError('Failed to fetch filieres.');
@@ -38,6 +41,9 @@ export const FilieresProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             formation: item.formation,
             degree: item.degree,
             levels: item.levels,
+            status: item.status,
+            created_at: item.created_at,
+            updated_at: item.updated_at,
           }));
           setFilieres(typedFilieres);
           setError(null);
