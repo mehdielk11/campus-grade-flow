@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,114 +7,102 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-
-interface Student {
-  id: string;
-  studentId: string;
-  name: string;
-  email: string;
-  grades: {
-    assignment1?: number;
-    assignment2?: number;
-    midterm?: number;
-    final?: number;
-    overall?: number;
-  };
-}
-
-const mockStudents: Student[] = [
-  {
-    id: '1',
-    studentId: 'STU-2024-001',
-    name: 'Alice Johnson',
-    email: 'alice.johnson@university.edu',
-    grades: { assignment1: 85, assignment2: 90, midterm: 88, final: 92, overall: 89 }
-  },
-  {
-    id: '2',
-    studentId: 'STU-2024-002',
-    name: 'Bob Smith',
-    email: 'bob.smith@university.edu',
-    grades: { assignment1: 78, assignment2: 82, midterm: 75, final: 80, overall: 79 }
-  },
-  {
-    id: '3',
-    studentId: 'STU-2024-003',
-    name: 'Carol Davis',
-    email: 'carol.davis@university.edu',
-    grades: { assignment1: 92, assignment2: 88, midterm: 95, final: 94, overall: 92 }
-  },
-  {
-    id: '4',
-    studentId: 'STU-2024-004',
-    name: 'David Wilson',
-    email: 'david.wilson@university.edu',
-    grades: { assignment1: 65, assignment2: 70, midterm: 68, final: 72, overall: 69 }
-  },
-  {
-    id: '5',
-    studentId: 'STU-2024-005',
-    name: 'Eva Green',
-    email: 'eva.green@university.edu',
-    grades: { assignment1: 90, assignment2: 88, midterm: 92, final: 85, overall: 89 }
-  }
-];
+import { useModules } from '@/contexts/ModulesContext';
+import { useStudents } from '@/contexts/StudentsContext';
+import { useGrades } from '@/contexts/GradesContext';
+import { useAuth } from '@/contexts/AuthContext';
+import type { Grade } from '@/contexts/GradesContext';
 
 const GradeEntry = () => {
   const { toast } = useToast();
-  const [selectedCourse, setSelectedCourse] = useState('CS101');
-  const [students, setStudents] = useState(mockStudents);
-  const [editingGrades, setEditingGrades] = useState<{ [key: string]: any }>({});
+  const { user } = useAuth();
+  const { modules } = useModules();
+  const { students } = useStudents();
+  const { grades, addGrade, updateGrade, fetchGrades } = useGrades();
+  const [selectedModuleId, setSelectedModuleId] = useState<string>('');
+  const [editing, setEditing] = useState<{ [studentId: string]: Partial<Grade> }>({});
+  const [isSaving, setIsSaving] = useState(false);
 
-  const courses = [
-    { id: 'CS101', name: 'Introduction to Programming' },
-    { id: 'CS102', name: 'Data Structures' },
-    { id: 'CS201', name: 'Algorithms' }
-  ];
+  // Get modules taught by this professor
+  const professorModules = useMemo(() => {
+    if (!user?.id) return [];
+    return (modules as any[]).filter(m => m.professor_id === user.id);
+  }, [modules, user]);
 
-  const gradeCategories = [
-    { key: 'assignment1', name: 'Assignment 1', weight: 20 },
-    { key: 'assignment2', name: 'Assignment 2', weight: 20 },
-    { key: 'midterm', name: 'Midterm Exam', weight: 30 },
-    { key: 'final', name: 'Final Exam', weight: 30 }
-  ];
+  // Default to first module if available
+  React.useEffect(() => {
+    if (professorModules.length > 0 && !selectedModuleId) {
+      setSelectedModuleId(professorModules[0].id);
+    }
+  }, [professorModules, selectedModuleId]);
 
-  const handleGradeChange = (studentId: string, category: string, value: string) => {
-    const numValue = value === '' ? undefined : Number(value);
-    setEditingGrades(prev => ({
+  const selectedModule = professorModules.find(m => m.id === selectedModuleId);
+  const cc_percentage = selectedModule?.cc_percentage ?? 30;
+  const exam_percentage = selectedModule?.exam_percentage ?? 70;
+
+  // Get students for this module (filiere/level match)
+  const moduleStudents = useMemo(() => {
+    if (!selectedModule) return [];
+    const levelNum = parseInt(selectedModule.academic_level.replace(/[^0-9]/g, ''));
+    return students.filter(s => s.filiere === selectedModule.filiere && s.level === levelNum);
+  }, [selectedModule, students]);
+
+  // Map of grades for this module
+  const moduleGrades = useMemo(() => {
+    const map: { [studentId: string]: any } = {};
+    grades.forEach(g => {
+      if (g.module_id === selectedModuleId) {
+        map[g.student_id] = g;
+      }
+    });
+    return map;
+  }, [grades, selectedModuleId]);
+
+  // Handle grade input change
+  const handleGradeChange = (studentId: string, field: 'cc_grade' | 'exam_grade', value: string) => {
+    setEditing(prev => ({
       ...prev,
-      [`${studentId}-${category}`]: numValue
+      [studentId]: {
+        ...prev[studentId],
+        [field]: value
+      }
     }));
   };
 
-  const saveGrades = () => {
-    setStudents(prev => prev.map(student => {
-      const updatedGrades = { ...student.grades };
-      
-      gradeCategories.forEach(category => {
-        const key = `${student.id}-${category.key}`;
-        if (editingGrades[key] !== undefined) {
-          updatedGrades[category.key as keyof typeof updatedGrades] = editingGrades[key];
+  // Calculate module grade
+  const calcModuleGrade = (cc: string, exam: string) => {
+    const ccNum = parseFloat(cc);
+    const examNum = parseFloat(exam);
+    if (isNaN(ccNum) && isNaN(examNum)) return '';
+    const ccVal = isNaN(ccNum) ? 0 : ccNum;
+    const examVal = isNaN(examNum) ? 0 : examNum;
+    return ((ccVal * cc_percentage / 100) + (examVal * exam_percentage / 100)).toFixed(2);
+  };
+
+  // Save all grades
+  const saveGrades = async () => {
+    setIsSaving(true);
+    try {
+      for (const student of moduleStudents) {
+        const edit = editing[student.id] as Partial<Grade> || {};
+        const existing = moduleGrades[student.id];
+        const cc_grade = (edit.cc_grade !== undefined ? edit.cc_grade?.toString() : (existing?.cc_grade?.toString() ?? ''));
+        const exam_grade = (edit.exam_grade !== undefined ? edit.exam_grade?.toString() : (existing?.exam_grade?.toString() ?? ''));
+        if (cc_grade === '' && exam_grade === '') continue;
+        const module_grade = calcModuleGrade(cc_grade, exam_grade);
+        if (existing) {
+          await updateGrade(existing.id, { cc_grade: parseFloat(cc_grade), exam_grade: parseFloat(exam_grade), module_grade: parseFloat(module_grade) });
+        } else {
+          await addGrade({ student_id: student.id, module_id: selectedModuleId, cc_grade: parseFloat(cc_grade), exam_grade: parseFloat(exam_grade), module_grade: parseFloat(module_grade) });
         }
-      });
-
-      // Calculate overall grade
-      const grades = gradeCategories.map(cat => ({
-        grade: updatedGrades[cat.key as keyof typeof updatedGrades] || 0,
-        weight: cat.weight
-      }));
-      
-      const overall = grades.reduce((sum, g) => sum + (g.grade * g.weight / 100), 0);
-      updatedGrades.overall = Math.round(overall);
-
-      return { ...student, grades: updatedGrades };
-    }));
-
-    setEditingGrades({});
-    toast({
-      title: "Grades saved",
-      description: "All grade changes have been saved successfully.",
-    });
+      }
+      toast({ title: 'Grades saved', description: 'All grade changes have been saved successfully.' });
+      setEditing({});
+      fetchGrades();
+    } catch (e) {
+      toast({ title: 'Error', description: 'Failed to save grades.', variant: 'destructive' });
+    }
+    setIsSaving(false);
   };
 
   const getLetterGrade = (score: number | undefined) => {
@@ -140,79 +128,91 @@ const GradeEntry = () => {
       <Card>
         <CardHeader>
           <CardTitle>Grade Entry</CardTitle>
-          <CardDescription>Enter and manage student grades for your courses</CardDescription>
+          <CardDescription>Enter and manage student grades for your modules</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-4 mb-6">
             <div className="space-y-2">
-              <Label>Select Course</Label>
-              <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+              <Label>Select Module</Label>
+              <Select value={selectedModuleId} onValueChange={setSelectedModuleId}>
                 <SelectTrigger className="w-64">
-                  <SelectValue placeholder="Choose a course" />
+                  <SelectValue placeholder="Choose a module" />
                 </SelectTrigger>
                 <SelectContent>
-                  {courses.map(course => (
-                    <SelectItem key={course.id} value={course.id}>
-                      {course.id} - {course.name}
+                  {professorModules.map(module => (
+                    <SelectItem key={module.id} value={module.id}>
+                      {module.code} - {module.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="flex-1" />
-            <Button onClick={saveGrades} className="bg-green-600 hover:bg-green-700">
-              Save All Grades
+            <Button onClick={saveGrades} className="bg-green-600 hover:bg-green-700" disabled={isSaving}>
+              {isSaving ? 'Saving...' : 'Save All Grades'}
             </Button>
           </div>
-
+          <div className="mb-4 text-sm text-gray-600">
+            <span className="font-semibold">Grading Weights:</span> Controle Continu: {cc_percentage}% &nbsp;|&nbsp; Examen: {exam_percentage}%
+          </div>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Student</TableHead>
-                  {gradeCategories.map(category => (
-                    <TableHead key={category.key} className="text-center">
-                      {category.name}
-                      <div className="text-xs text-gray-500">({category.weight}%)</div>
-                    </TableHead>
-                  ))}
-                  <TableHead className="text-center">Overall</TableHead>
-                  <TableHead className="text-center">Letter</TableHead>
+                  <TableHead className="text-center">Note Controle Continu</TableHead>
+                  <TableHead className="text-center">Note Examen</TableHead>
+                  <TableHead className="text-center">Note Module</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {students.map(student => (
-                  <TableRow key={student.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{student.name}</div>
-                        <div className="text-sm text-gray-500">{student.studentId}</div>
-                      </div>
-                    </TableCell>
-                    {gradeCategories.map(category => (
-                      <TableCell key={category.key} className="text-center">
+                {moduleStudents.map(student => {
+                  const existing = moduleGrades[student.id];
+                  const edit = editing[student.id] as Partial<Grade> || {};
+                  const cc_grade = (edit.cc_grade !== undefined ? edit.cc_grade?.toString() : (existing?.cc_grade?.toString() ?? ''));
+                  const exam_grade = (edit.exam_grade !== undefined ? edit.exam_grade?.toString() : (existing?.exam_grade?.toString() ?? ''));
+                  const module_grade = calcModuleGrade(cc_grade, exam_grade);
+                  return (
+                    <TableRow key={student.id}>
+                      <TableCell>
+                        <div className="font-medium">{student.first_name} {student.last_name}</div>
+                        <div className="text-sm text-gray-500">{student.student_id}</div>
+                      </TableCell>
+                      <TableCell className="text-center">
                         <Input
                           type="number"
                           min="0"
-                          max="100"
-                          className="w-20 text-center"
-                          value={editingGrades[`${student.id}-${category.key}`] ?? 
-                                 student.grades[category.key as keyof typeof student.grades] ?? ''}
-                          onChange={(e) => handleGradeChange(student.id, category.key, e.target.value)}
+                          max="20"
+                          step="0.01"
+                          className="w-24 text-center"
+                          value={cc_grade}
+                          onChange={e => handleGradeChange(student.id, 'cc_grade', e.target.value)}
                           placeholder="--"
                         />
                       </TableCell>
-                    ))}
-                    <TableCell className="text-center">
-                      <div className="font-bold text-lg">{student.grades.overall || '--'}</div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge className={`${getGradeColor(student.grades.overall)} text-white`}>
-                        {getLetterGrade(student.grades.overall)}
-                      </Badge>
-                    </TableCell>
+                      <TableCell className="text-center">
+                        <Input
+                          type="number"
+                          min="0"
+                          max="20"
+                          step="0.01"
+                          className="w-24 text-center"
+                          value={exam_grade}
+                          onChange={e => handleGradeChange(student.id, 'exam_grade', e.target.value)}
+                          placeholder="--"
+                        />
+                      </TableCell>
+                      <TableCell className="text-center font-bold">
+                        {module_grade || '--'}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {moduleStudents.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center">No students found for this module.</TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </div>
