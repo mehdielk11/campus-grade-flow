@@ -142,7 +142,7 @@ const Settings = () => {
                       id="firstName"
                       value={profileData.firstName}
                       onChange={(e) => setProfileData({ ...profileData, firstName: e.target.value })}
-                      disabled={user?.role === 'student'}
+                      disabled={user?.role === 'student' || user?.role === 'professor'}
                     />
                   </div>
                   <div>
@@ -151,7 +151,7 @@ const Settings = () => {
                       id="lastName"
                       value={profileData.lastName}
                       onChange={(e) => setProfileData({ ...profileData, lastName: e.target.value })}
-                      disabled={user?.role === 'student'}
+                      disabled={user?.role === 'student' || user?.role === 'professor'}
                     />
                   </div>
                 </div>
@@ -163,18 +163,18 @@ const Settings = () => {
                     type="email"
                     value={profileData.email}
                     onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                    disabled={user?.role === 'student'}
+                    disabled={user?.role === 'student' || user?.role === 'professor'}
                   />
                 </div>
 
-                {user?.role !== 'student' && (
+                {(user?.role === 'administrator' || user?.role === 'super_admin') && (
                   <div>
                     <span className="text-sm text-gray-500">Role:</span>
                     <p className="font-medium capitalize">{user?.role.replace('_', ' ')}</p>
                   </div>
                 )}
 
-                {user?.role !== 'student' && (
+                {(user?.role === 'administrator' || user?.role === 'super_admin') && (
                   <Button 
                     onClick={handleProfileUpdate} 
                     disabled={isLoading}

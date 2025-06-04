@@ -16,7 +16,6 @@ interface Student {
   filiere: string;
   level: number;
   semester: string;
-  gpa: number;
   status: string;
 }
 
@@ -173,18 +172,6 @@ const StudentEditDialog = ({ student, isOpen, onClose, onSave }: StudentEditDial
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="gpa">GPA</Label>
-              <Input
-                id="gpa"
-                type="number"
-                step="0.01"
-                min="0"
-                max="4"
-                value={formData.gpa}
-                onChange={(e) => setFormData({ ...formData, gpa: parseFloat(e.target.value) || 0 })}
-              />
-            </div>
             <div>
               <Label htmlFor="status">Status</Label>
               <Select

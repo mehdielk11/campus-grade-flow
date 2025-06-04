@@ -12,7 +12,6 @@ interface Student {
   department: string;
   level: string;
   semester: string;
-  gpa: number;
   status: string;
 }
 
@@ -69,11 +68,6 @@ const StudentDetailsDialog = ({ student, isOpen, onClose }: StudentDetailsDialog
               <Label className="text-sm font-medium text-gray-500">Current Semester</Label>
               <p className="text-lg">{student.semester}</p>
             </div>
-          </div>
-
-          <div>
-            <Label className="text-sm font-medium text-gray-500">Current GPA</Label>
-            <p className="text-2xl font-bold text-blue-600">{student.gpa.toFixed(2)}</p>
           </div>
 
           <div className="border-t pt-4">

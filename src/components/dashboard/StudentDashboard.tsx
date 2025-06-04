@@ -11,7 +11,6 @@ const StudentDashboard = () => {
 
   // Mock data - this would come from API in real implementation
   const mockData = {
-    gpa: 4.17,
     totalCredits: 9,
     activeCourses: 3,
     grades: [
@@ -105,17 +104,6 @@ const StudentDashboard = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-medium text-gray-700">Current GPA</CardTitle>
-            <p className="text-sm text-gray-500">Overall Grade Point Average</p>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-blue-600">{mockData.gpa}</div>
-            <p className="text-sm text-gray-500">out of 4.0</p>
-          </CardContent>
-        </Card>
-
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-lg font-medium text-gray-700">Courses</CardTitle>

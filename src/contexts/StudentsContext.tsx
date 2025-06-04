@@ -11,7 +11,6 @@ export interface Student {
   student_id: string;
   filiere: string; // Consider linking to filieres table later
   level: number;
-  gpa: number;
   status: 'Active' | 'Inactive' | 'Graduated';
   enrollment_date: string; // Or Date type if you prefer
   created_at: string; // Or Date type
@@ -38,7 +37,7 @@ export const StudentsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const fetchStudents = useCallback(async (limit?: number, offset?: number) => {
     setIsLoading(true);
-    let query = supabase.from('students').select('id, first_name, last_name, email, student_id, filiere, level, gpa, status, enrollment_date, created_at, updated_at');
+    let query = supabase.from('students').select('id, first_name, last_name, email, student_id, filiere, level, status, enrollment_date, created_at, updated_at');
     if (typeof limit === 'number') query = query.limit(limit);
     if (typeof offset === 'number') query = query.range(offset, offset + (limit ? limit - 1 : 9));
     const { data, error } = await query;

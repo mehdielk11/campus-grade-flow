@@ -56,26 +56,9 @@ const GradeViewer = () => {
     return 'bg-red-500';
   };
 
-  const calculateGPA = () => {
-    const totalPoints = mockGrades.reduce((sum, grade) => sum + (grade.grade * 4), 0);
-    const totalCredits = mockGrades.length;
-    return (totalPoints / totalCredits / 20).toFixed(2); // Convert to 4.0 scale
-  };
-
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Current GPA</CardTitle>
-            <CardDescription>Overall Grade Point Average</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-blue-600">{calculateGPA()}</div>
-            <p className="text-sm text-gray-500 mt-1">out of 4.0</p>
-          </CardContent>
-        </Card>
-
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">Courses</CardTitle>

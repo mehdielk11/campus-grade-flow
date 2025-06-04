@@ -16,14 +16,12 @@ interface TranscriptRecord {
     grade: string;
     points: number;
   }[];
-  gpa: number;
 }
 
 const mockTranscript: TranscriptRecord[] = [
   {
     semester: 'Fall',
     year: '2024',
-    gpa: 3.4,
     courses: [
       { code: 'CS101', name: 'Introduction to Programming', credits: 3, grade: 'A', points: 12 },
       { code: 'MATH201', name: 'Calculus II', credits: 4, grade: 'B+', points: 13.2 },
@@ -33,7 +31,6 @@ const mockTranscript: TranscriptRecord[] = [
   {
     semester: 'Spring',
     year: '2024',
-    gpa: 3.6,
     courses: [
       { code: 'CS102', name: 'Data Structures', credits: 3, grade: 'A-', points: 11.1 },
       { code: 'MATH202', name: 'Linear Algebra', credits: 3, grade: 'B+', points: 9.9 },
@@ -60,16 +57,6 @@ const TranscriptDownloader = () => {
     }, 2000);
   };
 
-  const calculateOverallGPA = () => {
-    const totalPoints = mockTranscript.reduce((sum, term) => 
-      sum + term.courses.reduce((termSum, course) => termSum + course.points, 0), 0
-    );
-    const totalCredits = mockTranscript.reduce((sum, term) => 
-      sum + term.courses.reduce((termSum, course) => termSum + course.credits, 0), 0
-    );
-    return (totalPoints / totalCredits).toFixed(2);
-  };
-
   const getTotalCredits = () => {
     return mockTranscript.reduce((sum, term) => 
       sum + term.courses.reduce((termSum, course) => termSum + course.credits, 0), 0
@@ -79,17 +66,6 @@ const TranscriptDownloader = () => {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Overall GPA</CardTitle>
-            <CardDescription>Cumulative Grade Point Average</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-blue-600">{calculateOverallGPA()}</div>
-            <p className="text-sm text-gray-500 mt-1">out of 4.0</p>
-          </CardContent>
-        </Card>
-
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">Academic Standing</CardTitle>
@@ -144,7 +120,6 @@ const TranscriptDownloader = () => {
                     <Calendar className="h-4 w-4" />
                     <h3 className="font-semibold text-lg">{term.semester} {term.year}</h3>
                   </div>
-                  <Badge variant="outline">GPA: {term.gpa}</Badge>
                 </div>
                 
                 <div className="space-y-2">

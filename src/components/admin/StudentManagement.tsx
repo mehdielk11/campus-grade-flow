@@ -251,16 +251,6 @@ const StudentManagement = () => {
               </SelectContent>
             </Select>
           </div>
-          <div>
-            <Label htmlFor="gpa">GPA</Label>
-            <Input
-              id="gpa"
-              type="number"
-              step="0.01"
-              value={formData.gpa || ''}
-              onChange={(e) => setFormData({ ...formData, gpa: parseFloat(e.target.value) })}
-            />
-          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -400,7 +390,6 @@ const StudentManagement = () => {
                   <TableHead>Email</TableHead>
                   <TableHead>Filière</TableHead>
                   <TableHead>Level</TableHead>
-                  <TableHead>GPA</TableHead>
                   <TableHead>Status</TableHead>
                     <TableHead>Enrollment Date</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -414,7 +403,6 @@ const StudentManagement = () => {
                     <TableCell>{student.email}</TableCell>
                     <TableCell>{student.filiere}</TableCell>
                       <TableCell>{student.level}</TableCell>
-                      <TableCell>{student.gpa?.toFixed(2)}</TableCell>
                       <TableCell>{student.status}</TableCell>
                       <TableCell>{student.enrollment_date}</TableCell>
                       <TableCell className="text-right">
