@@ -67,19 +67,8 @@ You can use your favorite IDE, edit directly on GitHub, or use cloud environment
 
 ---
 
-## Deployment
-You can deploy this project using [Lovable](https://lovable.dev/projects/ef3dfe67-b1fb-4f6c-a945-145825a19c45) or your preferred hosting provider. For custom domains, refer to the Lovable documentation.
-
----
-
 ## License & Status
 This project is no longer maintained. You are welcome to fork, modify, or use it as you wish. No support or updates will be provided.
-
----
-
-## Original Lovable Project Info
-
-**URL**: https://lovable.dev/projects/ef3dfe67-b1fb-4f6c-a945-145825a19c45
 
 ---
 
