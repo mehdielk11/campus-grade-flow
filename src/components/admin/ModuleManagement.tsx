@@ -11,6 +11,7 @@ import { Plus, Edit, Trash2, BookOpen, Filter } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useModules } from '@/contexts/ModulesContext';
 import { useProfessors } from '@/contexts/ProfessorsContext';
+import { useFilieres } from '@/contexts/FilieresContext';
 
 interface Module {
   id: string;
@@ -31,6 +32,7 @@ interface Module {
 const ModuleManagement = () => {
   const { modules, addModule, updateModule, deleteModule, fetchModules } = useModules();
   const { professors, isLoading: isLoadingProfessors } = useProfessors();
+  const { filieres, isLoading: isLoadingFilieres } = useFilieres();
   const [filteredModules, setFilteredModules] = useState<Module[]>(modules);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -55,7 +57,6 @@ const ModuleManagement = () => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filieres = ['MGE', 'MDI', 'FACG', 'MRI', 'IISI3', 'IISI5', 'IISRT'];
   const academicLevels = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'];
   const semesters = ['Semester 1', 'Semester 2'];
 
@@ -228,14 +229,14 @@ const ModuleManagement = () => {
             </div>
             <div className="space-y-2">
               <Label>Filière</Label>
-              <Select value={filters.filiere} onValueChange={(value) => setFilters({ ...filters, filiere: value })}>
+              <Select value={filters.filiere} onValueChange={(value) => setFilters({ ...filters, filiere: value })} disabled={isLoadingFilieres}>
                 <SelectTrigger>
                   <SelectValue placeholder="All Filières" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Filières</SelectItem>
-                  {filieres.map(filiere => (
-                    <SelectItem key={filiere} value={filiere}>{filiere}</SelectItem>
+                  {filieres.filter(filiere => filiere.code === 'IISI3' || filiere.code === 'IISI5' || !filiere.code.startsWith('IISI') || filiere.code === 'IISRT5').map((filiere) => (
+                    <SelectItem key={filiere.id} value={filiere.code}>{filiere.code}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -314,13 +315,13 @@ const ModuleManagement = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="filiere">Filière *</Label>
-                <Select value={formData.filiere} onValueChange={(value) => setFormData({ ...formData, filiere: value })}>
+                <Select value={formData.filiere} onValueChange={(value) => setFormData({ ...formData, filiere: value })} disabled={isLoadingFilieres}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select filière" />
                   </SelectTrigger>
                   <SelectContent>
-                    {filieres.map(filiere => (
-                      <SelectItem key={filiere} value={filiere}>{filiere}</SelectItem>
+                    {filieres.filter(filiere => filiere.code === 'IISI3' || filiere.code === 'IISI5' || !filiere.code.startsWith('IISI') || filiere.code === 'IISRT5').map((filiere) => (
+                      <SelectItem key={filiere.id} value={filiere.code}>{filiere.code}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

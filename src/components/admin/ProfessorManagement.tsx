@@ -14,11 +14,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { FILIERES } from '@/types';
 import { useProfessors, Professor } from '@/contexts/ProfessorsContext';
 import { nanoid } from 'nanoid';
+import { useFilieres } from '@/contexts/FilieresContext';
 
 const ProfessorManagement = () => {
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
   const { professors, isLoading, error, fetchProfessors, addProfessor, updateProfessor, deleteProfessor } = useProfessors();
+  const { filieres, isLoading: isLoadingFilieres } = useFilieres();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedProfessor, setSelectedProfessor] = useState<Professor | null>(null);
@@ -253,7 +255,7 @@ const ProfessorManagement = () => {
               </button>
               {filiereDropdownOpen && (
                 <div className="absolute z-10 mt-1 w-full rounded-md border bg-white shadow-lg max-h-60 overflow-auto">
-                  {FILIERES.filter(filiere => filiere.code === 'IISI3' || filiere.code === 'IISI5' || !filiere.code.startsWith('IISI') || filiere.code === 'IISRT5').map((filiere) => (
+                  {filieres.filter(filiere => filiere.code === 'IISI3' || filiere.code === 'IISI5' || !filiere.code.startsWith('IISI') || filiere.code === 'IISRT5').map((filiere) => (
                     <label key={filiere.id} className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer">
                       <input
                         type="checkbox"
@@ -355,15 +357,16 @@ const ProfessorManagement = () => {
                   <Select
                     value={filter.filiere}
                     onValueChange={(value) => setFilter({ ...filter, filiere: value })}
+                    disabled={isLoadingFilieres}
                   >
                     <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder="Filter by Filière" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Filières</SelectItem>
-                      {FILIERES.map((filiere) => (
-                        <SelectItem key={filiere.id} value={filiere.name}>
-                          {filiere.name.startsWith('IISI') ? filiere.name : filiere.name.replace(/ \(BAC\+3\)| \(BAC\+5\)/g, '')}
+                      {filieres.filter(filiere => filiere.code === 'IISI3' || filiere.code === 'IISI5' || !filiere.code.startsWith('IISI') || filiere.code === 'IISRT5').map((filiere) => (
+                        <SelectItem key={filiere.id} value={filiere.code}>
+                          {filiere.code}
                         </SelectItem>
                       ))}
                     </SelectContent>

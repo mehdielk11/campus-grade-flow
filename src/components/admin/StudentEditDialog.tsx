@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { FILIERES } from '@/types';
+import { useFilieres } from '@/contexts/FilieresContext';
 
 interface Student {
   id: string;
@@ -28,6 +29,7 @@ interface StudentEditDialogProps {
 
 const StudentEditDialog = ({ student, isOpen, onClose, onSave }: StudentEditDialogProps) => {
   const { toast } = useToast();
+  const { filieres, isLoading: isLoadingFilieres } = useFilieres();
   const [formData, setFormData] = useState<Student | null>(null);
 
   useEffect(() => {
@@ -59,7 +61,7 @@ const StudentEditDialog = ({ student, isOpen, onClose, onSave }: StudentEditDial
 
   if (!formData) return null;
 
-  const selectedFiliere = FILIERES.find(f => f.name === formData.filiere);
+  const selectedFiliere = filieres.find(f => f.code === formData.filiere);
   const availableLevels = selectedFiliere ? selectedFiliere.levels : [1, 2, 3];
 
   return (
@@ -118,19 +120,21 @@ const StudentEditDialog = ({ student, isOpen, onClose, onSave }: StudentEditDial
               <Select
                 value={formData.filiere}
                 onValueChange={(value) => {
-                  const selectedFil = FILIERES.find(f => f.name === value);
+                  const selectedFil = filieres.find(f => f.code === value);
                   setFormData({ 
                     ...formData, 
                     filiere: value,
                     level: selectedFil ? selectedFil.levels[0] : 1
                   });
                 }}
+                disabled={isLoadingFilieres}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select Filière" />
                 </SelectTrigger>
                 <SelectContent>
-                  {FILIERES.filter(filiere => filiere.code === 'IISI3' || filiere.code === 'IISI5' || !filiere.code.startsWith('IISI') || filiere.code === 'IISRT5').map((filiere) => (
+                  <SelectItem value="all">All Filières</SelectItem>
+                  {filieres.filter(filiere => filiere.code === 'IISI3' || filiere.code === 'IISI5' || !filiere.code.startsWith('IISI') || filiere.code === 'IISRT5').map((filiere) => (
                     <SelectItem key={filiere.id} value={filiere.code}>
                       {filiere.code}
                     </SelectItem>
