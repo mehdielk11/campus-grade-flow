@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Download, TrendingUp, Users, Award } from 'lucide-react';
+import { Download, TrendingUp, Users, Award, AlignCenter } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useModules } from '@/contexts/ModulesContext';
@@ -40,21 +40,17 @@ const GradeReports = () => {
     return grades.filter(g => g.module_id === selectedModuleId);
   }, [grades, selectedModuleId]);
 
-  // Compute grade distribution (numeric bins for 0-20 system) with equal-width bins of 2 steps
+  // Compute grade distribution (numeric bins for 0-20 system) with equal-width bins of 3 steps
   const gradeDistributionData = useMemo(() => {
-    // 11 bins: 0-1.99, 2-3.99, ..., 18-19.99, 20
+    // 7 bins: 0-2.99, 3-5.99, 6-8.99, 9-11.99, 12-14.99, 15-17.99, 18-20
     const binRanges = [
-      { range: '0-1.99', min: 0, max: 1.99 },
-      { range: '2-3.99', min: 2, max: 3.99 },
-      { range: '4-5.99', min: 4, max: 5.99 },
-      { range: '6-7.99', min: 6, max: 7.99 },
-      { range: '8-9.99', min: 8, max: 9.99 },
-      { range: '10-11.99', min: 10, max: 11.99 },
-      { range: '12-13.99', min: 12, max: 13.99 },
-      { range: '14-15.99', min: 14, max: 15.99 },
-      { range: '16-17.99', min: 16, max: 17.99 },
-      { range: '18-19.99', min: 18, max: 19.99 },
-      { range: '20', min: 20, max: 20 },
+      { range: '0-2.99', min: 0, max: 2.99 },
+      { range: '3-5.99', min: 3, max: 5.99 },
+      { range: '6-8.99', min: 6, max: 8.99 },
+      { range: '9-11.99', min: 9, max: 11.99 },
+      { range: '12-14.99', min: 12, max: 14.99 },
+      { range: '15-17.99', min: 15, max: 17.99 },
+      { range: '18-20', min: 18, max: 20 },
     ];
     const bins = binRanges.map(b => ({ ...b, count: 0 }));
     moduleGrades.forEach(g => {
@@ -72,6 +68,9 @@ const GradeReports = () => {
 
   // Find max count for dynamic Y axis
   const maxY = Math.max(...gradeDistributionData.map(b => b.count), 1);
+  const minY = 0;
+  // Generate Y axis ticks for better readability
+  const yTicks = Array.from({length: maxY + 1}, (_, i) => i);
 
   const calculateStats = () => {
     const totalStudents = moduleGrades.length;
@@ -209,10 +208,10 @@ const GradeReports = () => {
                         tick={{ fontSize: 13, textAnchor: 'middle' }}
                       />
                       <YAxis 
-                        label={{ value: 'Number of Students', angle: -90, position: 'insideLeft', style: { fontWeight: 'bold', fontSize: 14 } }} 
+                        label={{ value: 'Number of Students', angle: -90, position: 'insideLeft', offset: 20, dy: 70, style: { fontWeight: 'bold', fontSize: 14 }, positionAnchor: 'middle' }} 
                         allowDecimals={false} 
-                        domain={[0, Math.ceil(maxY * 1.1)]} 
-                        tickCount={Math.min(maxY + 1, 10)}
+                        domain={[minY, Math.ceil(maxY * 1.1)]}
+                        ticks={yTicks}
                         tick={{ fontSize: 13 }}
                       />
                       <Tooltip />
