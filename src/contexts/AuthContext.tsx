@@ -11,96 +11,6 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock users for demonstration
-const mockUsers: User[] = [
-  {
-    id: '1',
-    email: 'admin@university.edu',
-    firstName: 'Super',
-    lastName: 'Admin',
-    role: 'super_admin',
-    createdAt: '2024-01-01',
-    updatedAt: '2024-01-01'
-  },
-  {
-    id: '2',
-    email: 'admin.cs@university.edu',
-    firstName: 'John',
-    lastName: 'Smith',
-    role: 'administrator',
-    departmentId: 'cs-dept',
-    createdAt: '2024-01-01',
-    updatedAt: '2024-01-01'
-  },
-  {
-    id: '3',
-    email: 'prof.johnson@university.edu',
-    firstName: 'Emily',
-    lastName: 'Johnson',
-    role: 'professor',
-    professorId: 'prof-001',
-    departmentId: 'cs-dept',
-    createdAt: '2024-01-01',
-    updatedAt: '2024-01-01'
-  },
-  {
-    id: '4',
-    email: 'student.doe@university.edu',
-    firstName: 'Jane',
-    lastName: 'Doe',
-    role: 'student',
-    studentId: 'STU-2024-001',
-    departmentId: 'cs-dept',
-    createdAt: '2024-01-01',
-    updatedAt: '2024-01-01'
-  },
-  // Additional student users with new format
-  {
-    id: '5',
-    email: 'STU001@supmti.ma',
-    firstName: 'Alice',
-    lastName: 'Johnson',
-    role: 'student',
-    studentId: 'STU001',
-    departmentId: 'cs-dept',
-    createdAt: '2024-01-01',
-    updatedAt: '2024-01-01'
-  },
-  {
-    id: '6',
-    email: 'STU002@supmti.ma',
-    firstName: 'Bob',
-    lastName: 'Smith',
-    role: 'student',
-    studentId: 'STU002',
-    departmentId: 'management-dept',
-    createdAt: '2024-01-01',
-    updatedAt: '2024-01-01'
-  },
-  {
-    id: '7',
-    email: 'STU003@supmti.ma',
-    firstName: 'Carol',
-    lastName: 'Davis',
-    role: 'student',
-    studentId: 'STU003',
-    departmentId: 'cs-dept',
-    createdAt: '2024-01-01',
-    updatedAt: '2024-01-01'
-  },
-  {
-    id: '8',
-    email: 'STU004@supmti.ma',
-    firstName: 'David',
-    lastName: 'Wilson',
-    role: 'student',
-    studentId: 'STU004',
-    departmentId: 'management-dept',
-    createdAt: '2024-01-01',
-    updatedAt: '2024-01-01'
-  }
-];
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
@@ -142,8 +52,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .eq('email', credentials.email)
       .single();
 
-    if (admin && (admin.role === 'administrator' || admin.role === 'super_admin')) {
-      // Use Supabase Auth for admin/superadmin
+    if (admin && admin.role === 'super_admin') {
+      // Use Supabase Auth for superadmin
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email: credentials.email,
         password: credentials.password
@@ -171,7 +81,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: adminProfile.role,
         createdAt: adminProfile.created_at,
         updatedAt: adminProfile.updated_at,
-        // Add other fields as needed
       };
       localStorage.setItem('user', JSON.stringify(mappedUser));
       setAuthState({
@@ -180,28 +89,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: true
       });
       return;
+    } else if (admin && admin.role === 'administrator') {
+      // Authenticate administrator using DB password hash
+      if (admin.password && bcrypt.compareSync(credentials.password, admin.password)) {
+        const mappedUser = {
+          id: admin.id,
+          email: admin.email,
+          firstName: admin.first_name,
+          lastName: admin.last_name,
+          role: admin.role,
+          createdAt: admin.created_at,
+          updatedAt: admin.updated_at,
+        };
+        localStorage.setItem('user', JSON.stringify(mappedUser));
+        setAuthState({
+          user: mappedUser,
+          isLoading: false,
+          isAuthenticated: true
+        });
+        return;
+      } else {
+        setAuthState(prev => ({ ...prev, isLoading: false }));
+        throw new Error('Invalid credentials');
+      }
     }
 
     // First try normal email login
-    let user = mockUsers.find(u => u.email === credentials.email);
-    
-    // If not found, try student code login (email format: [StudentCode]@supmti.ma)
-    if (!user && !credentials.email.includes('@')) {
-      const studentEmail = `${credentials.email}@supmti.ma`;
-      user = mockUsers.find(u => u.email === studentEmail);
-    }
-    
-    // Check password
+    let user = null;
     let validPassword = false;
-    if (user) {
-      if (user.role === 'student' && user.studentId) {
-        // For students, allow both their studentId and 'password123'
-        validPassword = credentials.password === user.studentId || credentials.password === 'password123';
-      } else {
-        // For other users, use 'password123'
-        validPassword = credentials.password === 'password123';
-      }
-    }
 
     // Custom professor login (from DB)
     if (!user) {

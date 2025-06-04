@@ -205,7 +205,28 @@ const UserManagement = () => {
       // Create new user
       let insertResult;
       let newUserId = undefined;
-      if (userData.role === 'super_admin' || userData.role === 'administrator') {
+      if (userData.role === 'super_admin') {
+        const hashedPassword = userData.password ? bcrypt.hashSync(userData.password, 10) : '';
+        const { firstName, lastName, email, role, status, password } = userData;
+        // 1. Insert into admins table
+        insertResult = await supabase.from('admins').insert({
+          first_name: firstName,
+          last_name: lastName,
+          email,
+          role,
+          status,
+          password: hashedPassword,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }).select('id');
+        if (insertResult.error) {
+          toast({ title: 'Error', description: 'Failed to create superadmin.', variant: 'destructive' });
+          return;
+        }
+        newUserId = insertResult.data && insertResult.data[0]?.id;
+        // 2. (Optional) Create user in Supabase Auth for superadmin only
+        // You may need to do this manually if on free plan
+      } else if (userData.role === 'administrator') {
         const hashedPassword = userData.password ? bcrypt.hashSync(userData.password, 10) : '';
         const { firstName, lastName, email, role, status } = userData;
         insertResult = await supabase.from('admins').insert({
@@ -219,7 +240,7 @@ const UserManagement = () => {
           updated_at: new Date().toISOString(),
         }).select('id');
         if (insertResult.error) {
-          toast({ title: 'Error', description: 'Failed to create admin.', variant: 'destructive' });
+          toast({ title: 'Error', description: 'Failed to create administrator.', variant: 'destructive' });
           return;
         }
         newUserId = insertResult.data && insertResult.data[0]?.id;
@@ -311,7 +332,7 @@ const UserManagement = () => {
 
   const UserForm = () => {
     const [formData, setFormData] = useState<Partial<User>>(selectedUser || { 
-      role: 'student', 
+      role: 'administrator', 
       status: 'Active',
       password: ''
     });
@@ -387,30 +408,13 @@ const UserManagement = () => {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label htmlFor="role">Role</Label>
-            <Select
-              value={formData.role || 'student'}
-              onValueChange={(value) => setFormData({ ...formData, role: value as User['role'] })}
-              disabled={isSuperAdminEditingSelf || shouldDisableFields}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select role" />
-              </SelectTrigger>
-              <SelectContent>
-                {roles.map((role) => (
-                  <SelectItem
-                    key={role.value}
-                    value={role.value}
-                    disabled={
-                      role.value === 'super_admin' &&
-                      superAdminExists &&
-                      (!selectedUser || selectedUser.role !== 'super_admin')
-                    }
-                  >
-                    {role.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Input
+              id="role"
+              value="Administrator"
+              readOnly
+              disabled
+              className="bg-gray-100 cursor-not-allowed"
+            />
           </div>
           <div>
             <Label htmlFor="status">Status</Label>
@@ -485,6 +489,13 @@ const UserManagement = () => {
     );
   };
 
+  // Restrict access to superadmin only
+  if (!currentUser || currentUser.role !== 'super_admin') {
+    return <div className="p-8 text-center text-red-600 font-bold">Access Denied: Only the Super Admin can manage administrators.</div>;
+  }
+  // Only show administrators in the list
+  const adminUsers = users.filter(u => u.role === 'administrator');
+
   return (
     <div className="space-y-6">
       <Card>
@@ -492,7 +503,7 @@ const UserManagement = () => {
           <div className="flex justify-between items-center">
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5" />
-              User Management
+              Administrators
             </CardTitle>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
@@ -504,7 +515,7 @@ const UserManagement = () => {
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>
-                    {selectedUser ? 'Edit User' : 'Create New User'}
+                    {selectedUser ? 'Edit User' : 'Add New Admin'}
                   </DialogTitle>
                 </DialogHeader>
                 <UserForm />
@@ -574,7 +585,7 @@ const UserManagement = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredUsers.map((user) => (
+                  {adminUsers.map((user) => (
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">
                         {user.firstName} {user.lastName}

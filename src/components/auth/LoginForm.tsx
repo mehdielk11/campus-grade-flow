@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -105,18 +104,6 @@ const LoginForm = () => {
                 )}
               </Button>
             </form>
-
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-600 mb-2">Demo Accounts:</p>
-              <div className="text-xs space-y-1">
-                <div><strong>Super Admin:</strong> admin@university.edu</div>
-                <div><strong>Administrator:</strong> admin.cs@university.edu</div>
-                <div><strong>Professor:</strong> prof.johnson@university.edu</div>
-                <div><strong>Student (Email):</strong> student.doe@university.edu</div>
-                <div><strong>Student (Code):</strong> STU001 or STU002</div>
-                <div className="mt-2"><strong>Password:</strong> password123 (or Student Code for students)</div>
-              </div>
-            </div>
           </CardContent>
         </Card>
       </div>

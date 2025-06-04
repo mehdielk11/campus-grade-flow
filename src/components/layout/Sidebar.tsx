@@ -62,7 +62,7 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps & { onToggle?: () => vo
       { name: 'Profile', href: '/profile', icon: User },
     ] : []),
     ...(user?.role === 'super_admin' ? [
-      { name: 'User Management', href: '/users', icon: UserCog },
+      { name: 'Administrators', href: '/users', icon: UserCog },
       { name: 'System Backup', href: '/backup', icon: Database },
     ] : []),
     { name: 'Settings', href: '/settings', icon: Settings },
