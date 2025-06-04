@@ -30,16 +30,44 @@ const Settings = () => {
   const handleProfileUpdate = async () => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const updatedUser = { ...user!, ...profileData };
-      updateUser(updatedUser);
-      
-      toast({
-        title: "Profile updated",
-        description: "Your profile information has been updated successfully."
-      });
+      if (user.role === 'administrator' || user.role === 'super_admin') {
+        // Update admins table in Supabase
+        const { data, error } = await supabase
+          .from('admins')
+          .update({
+            first_name: profileData.firstName,
+            last_name: profileData.lastName,
+            email: profileData.email
+          })
+          .eq('email', user.email)
+          .select()
+          .single();
+        if (error || !data) {
+          toast({
+            title: "Error",
+            description: "Failed to update profile in database. Please try again.",
+            variant: "destructive"
+          });
+          setIsLoading(false);
+          return;
+        }
+        // Update local user state
+        const updatedUser = { ...user, firstName: data.first_name, lastName: data.last_name, email: data.email };
+        updateUser(updatedUser);
+        toast({
+          title: "Profile updated",
+          description: "Your profile information has been updated successfully."
+        });
+      } else {
+        // Simulate API call for other roles (or implement similar logic for students/professors if needed)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const updatedUser = { ...user!, ...profileData };
+        updateUser(updatedUser);
+        toast({
+          title: "Profile updated",
+          description: "Your profile information has been updated successfully."
+        });
+      }
     } catch (error) {
       toast({
         title: "Error",
@@ -74,32 +102,75 @@ const Settings = () => {
       if (user.role === 'student') table = 'students';
       else if (user.role === 'professor') table = 'professors';
       else table = 'admins';
-      const { data, error } = await supabase
-        .from(table)
-        .select('id, password')
-        .eq('email', user.email)
-        .single();
-      if (error || !data) {
-        toast({ title: "Error", description: "User not found.", variant: "destructive" });
-        setIsLoading(false);
-        return;
-      }
-      const passwordMatch = bcrypt.compareSync(passwordData.currentPassword, data.password);
-      if (!passwordMatch) {
-        toast({ title: "Authentication failed", description: "Current password is incorrect.", variant: "destructive" });
-        setIsLoading(false);
-        return;
-      }
-      const hashedPassword = bcrypt.hashSync(passwordData.newPassword, 10);
-      const { error: updateError } = await supabase
-        .from(table)
-        .update({ password: hashedPassword })
-        .eq('id', data.id);
-      if (updateError) {
-        toast({ title: "Error", description: "Failed to change password. Please try again.", variant: "destructive" });
-      } else {
+      if (user.role === 'administrator' || user.role === 'super_admin') {
+        // Re-authenticate with Supabase Auth
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: user.email,
+          password: passwordData.currentPassword
+        });
+        if (signInError) {
+          toast({ title: "Authentication failed", description: "Current password is incorrect.", variant: "destructive" });
+          setIsLoading(false);
+          return;
+        }
+        // Proceed to update password in Auth and DB
+        const { data, error } = await supabase
+          .from('admins')
+          .select('id')
+          .eq('email', user.email)
+          .single();
+        if (error || !data) {
+          toast({ title: "Error", description: "User not found.", variant: "destructive" });
+          setIsLoading(false);
+          return;
+        }
+        const { error: authError } = await supabase.auth.updateUser({ password: passwordData.newPassword });
+        if (authError) {
+          toast({ title: "Error", description: "Failed to update password in Supabase Auth.", variant: "destructive" });
+          setIsLoading(false);
+          return;
+        }
+        const hashedPassword = bcrypt.hashSync(passwordData.newPassword, 10);
+        const { error: updateError } = await supabase
+          .from('admins')
+          .update({ password: hashedPassword })
+          .eq('id', data.id);
+        if (updateError) {
+          toast({ title: "Error", description: "Failed to update password in database.", variant: "destructive" });
+          setIsLoading(false);
+          return;
+        }
         setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
         toast({ title: "Password changed", description: "Your password has been updated successfully." });
+      } else {
+        // Student/professor: existing logic
+        const { data, error } = await supabase
+          .from(table)
+          .select('id, password')
+          .eq('email', user.email)
+          .single();
+        if (error || !data) {
+          toast({ title: "Error", description: "User not found.", variant: "destructive" });
+          setIsLoading(false);
+          return;
+        }
+        const passwordMatch = bcrypt.compareSync(passwordData.currentPassword, data.password);
+        if (!passwordMatch) {
+          toast({ title: "Authentication failed", description: "Current password is incorrect.", variant: "destructive" });
+          setIsLoading(false);
+          return;
+        }
+        const hashedPassword = bcrypt.hashSync(passwordData.newPassword, 10);
+        const { error: updateError } = await supabase
+          .from(table)
+          .update({ password: hashedPassword })
+          .eq('id', data.id);
+        if (updateError) {
+          toast({ title: "Error", description: "Failed to change password. Please try again.", variant: "destructive" });
+        } else {
+          setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+          toast({ title: "Password changed", description: "Your password has been updated successfully." });
+        }
       }
     } catch (error) {
       toast({ title: "Error", description: "Failed to change password. Please try again.", variant: "destructive" });

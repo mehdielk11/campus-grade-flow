@@ -332,6 +332,12 @@ const UserManagement = () => {
       setFormData({ ...formData, password });
     };
 
+    // Helper to determine if fields should be disabled
+    const isAdminOrSuperAdmin = (formData.role === 'super_admin' || formData.role === 'administrator');
+    const isEditingAdminOrSuperAdmin = selectedUser && isAdminOrSuperAdmin;
+    const isCreatingSuperAdmin = !selectedUser && formData.role === 'super_admin' && superAdminExists;
+    const shouldDisableFields = isEditingAdminOrSuperAdmin || isCreatingSuperAdmin;
+
     return (
       <div className="space-y-4">
         {isSuperAdminEditingSelf && (
@@ -350,6 +356,7 @@ const UserManagement = () => {
               id="firstName"
               value={formData.firstName || ''}
               onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+              disabled={shouldDisableFields}
             />
           </div>
           <div>
@@ -358,6 +365,7 @@ const UserManagement = () => {
               id="lastName"
               value={formData.lastName || ''}
               onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+              disabled={shouldDisableFields}
             />
           </div>
         </div>
@@ -368,6 +376,7 @@ const UserManagement = () => {
             type="email"
             value={formData.email || ''}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            disabled={shouldDisableFields}
           />
           {formData.role === 'student' && (
             <p className="text-xs text-gray-500 mt-1">
@@ -381,7 +390,7 @@ const UserManagement = () => {
             <Select
               value={formData.role || 'student'}
               onValueChange={(value) => setFormData({ ...formData, role: value as User['role'] })}
-              disabled={isSuperAdminEditingSelf}
+              disabled={isSuperAdminEditingSelf || shouldDisableFields}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select role" />
@@ -408,7 +417,7 @@ const UserManagement = () => {
             <Select
               value={formData.status || 'Active'}
               onValueChange={(value) => setFormData({ ...formData, status: value as 'Active' | 'Inactive' })}
-              disabled={isSuperAdminEditingSelf}
+              disabled={isSuperAdminEditingSelf || shouldDisableFields}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select status" />
@@ -432,6 +441,7 @@ const UserManagement = () => {
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               placeholder={selectedUser ? "Leave blank to keep current password" : "Enter password"}
               className="h-10"
+              disabled={shouldDisableFields}
             />
             <Button
               type="button"
@@ -440,6 +450,7 @@ const UserManagement = () => {
               onClick={() => setShowNewPassword((v) => !v)}
               className="h-10 px-3"
               style={{ minWidth: 0 }}
+              disabled={shouldDisableFields}
             >
               {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
@@ -450,6 +461,7 @@ const UserManagement = () => {
               onClick={generatePassword}
               className="h-10 px-3"
               style={{ minWidth: 0 }}
+              disabled={shouldDisableFields}
             >
               Generate
             </Button>
@@ -457,6 +469,11 @@ const UserManagement = () => {
           {formData.role === 'student' && (
             <p className="text-xs text-gray-500 mt-1">
               Default password for students is their Student ID
+            </p>
+          )}
+          {(isEditingAdminOrSuperAdmin || isCreatingSuperAdmin) && (
+            <p className="text-xs text-blue-600 mt-1">
+              Super Admins and Administrators can only change their password and update their profile information from <b>Settings</b>.
             </p>
           )}
         </div>

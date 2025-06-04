@@ -134,7 +134,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (credentials: LoginCredentials) => {
     setAuthState(prev => ({ ...prev, isLoading: true }));
-    
+
+    // 1. Check if the email is an admin or superadmin in the admins table
+    const { data: admin, error: adminError } = await supabase
+      .from('admins')
+      .select('*')
+      .eq('email', credentials.email)
+      .single();
+
+    if (admin && (admin.role === 'administrator' || admin.role === 'super_admin')) {
+      // Use Supabase Auth for admin/superadmin
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: credentials.email,
+        password: credentials.password
+      });
+      if (signInError || !signInData.session) {
+        setAuthState(prev => ({ ...prev, isLoading: false }));
+        throw new Error('Invalid credentials');
+      }
+      // Fetch admin profile again to get all fields
+      const { data: adminProfile, error: adminProfileError } = await supabase
+        .from('admins')
+        .select('*')
+        .eq('email', credentials.email)
+        .single();
+      if (adminProfileError || !adminProfile) {
+        setAuthState(prev => ({ ...prev, isLoading: false }));
+        throw new Error('Admin profile not found');
+      }
+      // Map DB fields to expected user object
+      const mappedUser = {
+        id: adminProfile.id,
+        email: adminProfile.email,
+        firstName: adminProfile.first_name,
+        lastName: adminProfile.last_name,
+        role: adminProfile.role,
+        createdAt: adminProfile.created_at,
+        updatedAt: adminProfile.updated_at,
+        // Add other fields as needed
+      };
+      localStorage.setItem('user', JSON.stringify(mappedUser));
+      setAuthState({
+        user: mappedUser,
+        isLoading: false,
+        isAuthenticated: true
+      });
+      return;
+    }
+
     // First try normal email login
     let user = mockUsers.find(u => u.email === credentials.email);
     
@@ -234,12 +281,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     localStorage.removeItem('user');
+    supabase.auth.signOut();
     setAuthState({
       user: null,
       isLoading: false,
       isAuthenticated: false
     });
-    // Force a page reload to ensure clean state
     window.location.href = '/';
   };
 

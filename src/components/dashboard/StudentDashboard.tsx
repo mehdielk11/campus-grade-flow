@@ -18,22 +18,6 @@ const StudentDashboard = () => {
   const { modules, isLoading: isLoadingModules } = useModules();
   const { students, isLoading: isLoadingStudents } = useStudents();
 
-  // Filter state
-  const [selectedSemester, setSelectedSemester] = useState('all');
-  const [selectedLevel, setSelectedLevel] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
-
-  // Filter grades for the current student
-  const studentGrades = React.useMemo(() => {
-    if (!user || !user.studentId) return [];
-    return grades.filter(g => g.students?.student_id === user.studentId);
-  }, [grades, user]);
-
-  // Count unique modules
-  const uniqueModuleIds = React.useMemo(() => {
-    return Array.from(new Set(studentGrades.map(g => g.module_id)));
-  }, [studentGrades]);
-
   // Find the current student object
   const currentStudent = React.useMemo(() => {
     if (!user || !user.studentId) return undefined;
@@ -48,6 +32,34 @@ const StudentDashboard = () => {
     );
   }, [modules, currentStudent]);
 
+  // Academic year selector state
+  const allYears = React.useMemo(() => {
+    // Collect all unique academic years from studentModules
+    return Array.from(new Set(studentModules.map(m => m.academic_level || m.academicLevel))).filter(Boolean).sort();
+  }, [studentModules]);
+  const [selectedYear, setSelectedYear] = useState<string>(() => allYears.length > 0 ? allYears[allYears.length - 1] : '');
+  // Update selectedYear if allYears changes and current selection is not present
+  React.useEffect(() => {
+    if (allYears.length > 0 && !allYears.includes(selectedYear)) {
+      setSelectedYear(allYears[allYears.length - 1]);
+    }
+  }, [allYears, selectedYear]);
+
+  // Filter state (move selectedLevel logic to selectedYear)
+  const [selectedSemester, setSelectedSemester] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Filter grades for the current student
+  const studentGrades = React.useMemo(() => {
+    if (!user || !user.studentId) return [];
+    return grades.filter(g => g.students?.student_id === user.studentId);
+  }, [grades, user]);
+
+  // Count unique modules
+  const uniqueModuleIds = React.useMemo(() => {
+    return Array.from(new Set(studentGrades.map(g => g.module_id)));
+  }, [studentGrades]);
+
   // Map moduleId to grade for fast lookup
   const gradeMap = React.useMemo(() => {
     const map = new Map();
@@ -55,22 +67,19 @@ const StudentDashboard = () => {
     return map;
   }, [studentGrades]);
 
-  // Get unique semesters and levels from studentModules
+  // Get unique semesters from modules for the selected year
   const availableSemesters = React.useMemo(() => {
-    return Array.from(new Set(studentModules.map(m => m.semester))).filter(Boolean);
-  }, [studentModules]);
-  const availableLevels = React.useMemo(() => {
-    return Array.from(new Set(studentModules.map(m => m.academic_level || m.academicLevel))).filter(Boolean);
-  }, [studentModules]);
+    return Array.from(new Set(studentModules.filter(m => (m.academic_level || m.academicLevel) === selectedYear).map(m => m.semester))).filter(Boolean);
+  }, [studentModules, selectedYear]);
 
-  // Apply filters and search to studentModules
+  // Apply filters and search to studentModules for the selected year
   const filteredModules = React.useMemo(() => {
     return studentModules.filter(m =>
+      ((m.academic_level || m.academicLevel) === selectedYear) &&
       (selectedSemester === 'all' || m.semester === selectedSemester) &&
-      (selectedLevel === 'all' || m.academic_level === selectedLevel || m.academicLevel === selectedLevel) &&
       (searchTerm.trim() === '' || m.name.toLowerCase().includes(searchTerm.trim().toLowerCase()))
     );
-  }, [studentModules, selectedSemester, selectedLevel, searchTerm]);
+  }, [studentModules, selectedYear, selectedSemester, searchTerm]);
 
   // Group filtered modules by semester
   const modulesBySemester = React.useMemo(() => {
@@ -116,66 +125,88 @@ const StudentDashboard = () => {
       </div>
 
       {/* Main Content Area */}
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Stats Cards: Modules by Semester */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-medium text-gray-700">Modules</CardTitle>
-            <p className="text-sm text-gray-500">Enrolled This Semester</p>
+          <div className="flex items-center gap-2 mb-1">
+            {/* Book Icon */}
+            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" className="text-purple-600"><rect x="3" y="5" width="18" height="14" rx="2" stroke="#a78bfa" strokeWidth="2"/><path d="M3 7h18" stroke="#a78bfa" strokeWidth="2"/></svg>
+            <CardTitle className="text-2xl font-bold text-gray-800">Modules</CardTitle>
+          </div>
+          <p className="text-sm text-gray-500 mb-4">Enrolled This Academic Year</p>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-purple-600">{studentModules.length}</div>
-            <p className="text-sm text-gray-500">active modules</p>
+          <div className="space-y-6">
+            {sortedSemesters.map((semester, idx) => (
+              <div key={semester} className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="inline-block bg-purple-100 text-purple-700 px-3 py-0.5 rounded-full text-xs font-semibold">{semester}</span>
+                  <span className="text-lg font-bold text-purple-700 flex items-center gap-1">
+                    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" className="inline-block"><rect x="3" y="5" width="18" height="14" rx="2" stroke="#a78bfa" strokeWidth="2"/></svg>
+                    {modulesBySemester[semester].length}
+                  </span>
+                  <span className="text-xs text-gray-500 ml-1">module{modulesBySemester[semester].length > 1 ? 's' : ''}</span>
+                </div>
+                <div className="flex flex-wrap gap-2 ml-2">
+                  {modulesBySemester[semester].map((mod) => (
+                    <span key={mod.id} className="bg-purple-500 text-white rounded px-2 py-0.5 text-xs font-medium cursor-pointer hover:bg-purple-600 transition" title={mod.name}>{mod.code} <span className="hidden sm:inline">- {mod.name.length > 18 ? mod.name.slice(0, 18) + '…' : mod.name}</span></span>
+                  ))}
+                </div>
+                {idx < sortedSemesters.length - 1 && <hr className="my-4 border-gray-200" />}
+              </div>
+            ))}
+          </div>
           </CardContent>
         </Card>
+
+      {/* Academic Year Selector */}
+      <div className="flex flex-wrap gap-4 items-end mb-6">
+        <div>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Academic Year</label>
+          <Select value={selectedYear} onValueChange={setSelectedYear}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Select Year" />
+            </SelectTrigger>
+            <SelectContent>
+              {allYears.map(year => (
+                <SelectItem key={year} value={year}>{year}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Semester</label>
+          <Select value={selectedSemester} onValueChange={setSelectedSemester}>
+            <SelectTrigger className="w-36">
+              <SelectValue placeholder="All Semesters" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Semesters</SelectItem>
+              {availableSemesters.map(sem => (
+                <SelectItem key={sem} value={sem}>{sem}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex-1 min-w-[180px]">
+          <label className="block text-xs font-medium text-gray-500 mb-1">Search Module</label>
+          <Input
+            type="text"
+            placeholder="Type module name..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="w-full"
+          />
+        </div>
       </div>
+      {/* Year Label */}
+      <div className="mb-2 text-lg font-semibold text-gray-700">Academic Year: {selectedYear}</div>
 
       {/* Grade Summary */}
       <Card>
         <CardHeader>
           <CardTitle className="text-xl font-semibold">Grade Summary</CardTitle>
           <p className="text-gray-600">Your academic performance this semester</p>
-          {/* Filter Bar */}
-          <div className="flex flex-wrap gap-4 mt-4 items-end">
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Semester</label>
-              <Select value={selectedSemester} onValueChange={setSelectedSemester}>
-                <SelectTrigger className="w-36">
-                  <SelectValue placeholder="All Semesters" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Semesters</SelectItem>
-                  {availableSemesters.map(sem => (
-                    <SelectItem key={sem} value={sem}>{sem}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Academic Year</label>
-              <Select value={selectedLevel} onValueChange={setSelectedLevel}>
-                <SelectTrigger className="w-36">
-                  <SelectValue placeholder="All Years" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Years</SelectItem>
-                  {availableLevels.map(level => (
-                    <SelectItem key={level} value={level}>{level}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex-1 min-w-[180px]">
-              <label className="block text-xs font-medium text-gray-500 mb-1">Search Module</label>
-              <Input
-                type="text"
-                placeholder="Type module name..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="w-full"
-              />
-            </div>
-          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {isLoading || isLoadingModules || isLoadingStudents ? (
@@ -235,14 +266,14 @@ const StudentDashboard = () => {
                                 <svg width="24" height="24" fill="none" viewBox="0 0 24 24" className="mb-0.5"><path d="M3 10l9-5 9 5-9 5-9-5z" stroke="#6b7280" strokeWidth="2"/><path d="M12 15v-5" stroke="#6b7280" strokeWidth="2"/><path d="M7 15c0 2 2.5 3 5 3s5-1 5-3" stroke="#6b7280" strokeWidth="2"/></svg>
                                 <span className="text-[13px] font-semibold text-gray-700 mb-0.5">Exam</span>
                                 <span className="text-base font-bold text-gray-900">{grade?.exam_grade ?? '--'}</span>
-                              </div>
+                </div>
                               <div className="flex flex-col items-center justify-center bg-gray-50 rounded-lg py-2">
                                 {/* Medal SVG */}
                                 <svg width="24" height="24" fill="none" viewBox="0 0 24 24" className="mb-0.5"><circle cx="12" cy="10" r="4" stroke="#6b7280" strokeWidth="2"/><path d="M8 16l-2 4m10-4l2 4" stroke="#6b7280" strokeWidth="2"/></svg>
                                 <span className="text-[13px] font-semibold text-gray-700 mb-0.5">Final</span>
                                 <span className="text-base font-bold text-gray-900">{grade?.module_grade ?? '--'}</span>
-                              </div>
-                            </div>
+              </div>
+                  </div>
                           </CardContent>
                         </Card>
                       );
