@@ -14,6 +14,7 @@ import { useModules } from '@/contexts/ModulesContext';
 import { useFilieres } from '@/contexts/FilieresContext';
 import { useGrades, EnrichedGrade } from '@/contexts/GradesContext';
 import { useStudents } from '@/contexts/StudentsContext';
+import { supabase } from '@/lib/supabase';
 
 // Add this type override for modules fetched from backend
 interface Module {
@@ -31,11 +32,20 @@ interface Module {
   status?: 'active' | 'inactive';
 }
 
+// Helper to generate academic years from a start year to the current year
+function generateAcademicYears(startYear: number, endYear: number) {
+  const years = [];
+  for (let y = startYear; y < endYear; y++) {
+    years.push(`${y}-${y + 1}`);
+  }
+  return years;
+}
+
 const GradeManagement = () => {
   const { toast } = useToast();
   const { modules, isLoading: isLoadingModules } = useModules();
   const { filieres, isLoading: isLoadingFilieres } = useFilieres();
-  const { grades, isLoading: isLoadingGrades, error: gradesError, fetchGrades, updateGrade, deleteGrade, addGrade } = useGrades();
+  const { grades, gradeHistory, isLoading: isLoadingGrades, error: gradesError, fetchGrades, fetchGradeHistory, updateGrade, deleteGrade, addGrade } = useGrades();
   const { students, isLoading: isLoadingStudents } = useStudents();
 
   const [selectedFiliere, setSelectedFiliere] = useState('all');
@@ -56,7 +66,13 @@ const GradeManagement = () => {
   // Add this state for the edit/add dialog at the bottom
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>('');
+  const [academicYears, setAcademicYears] = useState<string[]>([]);
+
   const semesters = ['Semester 1', 'Semester 2'];
+
+  const currentYear = new Date().getFullYear();
+  const academicYearsFallback = generateAcademicYears(2018, currentYear + 1); // fallback range
 
   // Use filieres context as the source of truth for filiere options
   const filiereOptions = useMemo(() => {
@@ -83,8 +99,18 @@ const GradeManagement = () => {
     return grade && grade.modules?.academic_level ? [parseInt(grade.modules.academic_level.replace('Level ', ''))] : [];
   }, [selectedFiliere, grades]);
 
+  // Fetch grade history when academic year or semester changes
+  useEffect(() => {
+    if (selectedAcademicYear) {
+      fetchGradeHistory(selectedAcademicYear, selectedSemester !== 'all' ? selectedSemester : undefined);
+    }
+  }, [selectedAcademicYear, selectedSemester]);
+
+  // Use gradeHistory if academic year is selected, else use grades
+  const gradesSource = selectedAcademicYear ? gradeHistory : grades;
+
   const filteredGrades = useMemo(() => {
-    let filtered = grades;
+    let filtered = gradesSource;
 
     if (selectedFiliere !== 'all') {
       // Only include grades where the student's filiere matches the selected filiere
@@ -114,7 +140,7 @@ const GradeManagement = () => {
 
     const uniqueStudentIds = Array.from(new Set(filtered.map(grade => grade.student_id))).filter(id => id !== undefined);
     return grades.filter(grade => uniqueStudentIds.includes(grade.student_id));
-  }, [grades, selectedFiliere, selectedLevel, selectedSemester, selectedModuleId]);
+  }, [gradesSource, selectedFiliere, selectedLevel, selectedSemester, selectedModuleId]);
 
 
   const gradesByStudentMap = useMemo(() => {
@@ -222,6 +248,68 @@ const GradeManagement = () => {
     modules.forEach(m => map.set(m.id, m));
     return map;
   }, [modules]);
+
+  useEffect(() => {
+    async function fetchAcademicYears() {
+      // Query both grade_history and grades for distinct academic_years
+      const { data: historyYears, error: err1 } = await supabase
+        .from('grade_history')
+        .select('academic_year')
+        .neq('academic_year', null);
+      const { data: gradesYears, error: err2 } = await supabase
+        .from('grades')
+        .select('academic_year')
+        .neq('academic_year', null);
+      let years: string[] = [];
+      if (!err1 && historyYears) years = years.concat(historyYears.map(y => y.academic_year));
+      if (!err2 && gradesYears) years = years.concat(gradesYears.map(y => y.academic_year));
+      years = Array.from(new Set(years)).filter(Boolean).sort();
+      if (years.length === 0) {
+        // fallback: generate from 2018 to current year
+        const currentYear = new Date().getFullYear();
+        years = generateAcademicYears(2018, currentYear + 1);
+      }
+      setAcademicYears(years);
+    }
+    fetchAcademicYears();
+  }, []);
+
+  const [showSetAcademicYearDialog, setShowSetAcademicYearDialog] = useState(false);
+  const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
+  const [bulkAcademicYear, setBulkAcademicYear] = useState<string>('');
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+
+  // Handler for bulk update (stub, to be implemented with backend logic)
+  const handleBulkSetAcademicYear = async () => {
+    if (!bulkAcademicYear || selectedStudents.length === 0) return;
+    setIsBulkUpdating(true);
+    // Call Supabase function to update academic year for grades and grade_history
+    const { error } = await supabase.rpc('bulk_update_academic_year', {
+      student_ids: selectedStudents,
+      new_academic_year: bulkAcademicYear,
+    });
+    setIsBulkUpdating(false);
+    setShowSetAcademicYearDialog(false);
+    setBulkAcademicYear('');
+    setSelectedStudents([]);
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to update academic year.', variant: 'destructive' });
+    } else {
+      toast({ title: 'Success', description: 'Academic year updated for selected students.' });
+      // Refresh grades and grade history
+      fetchGrades();
+      if (selectedAcademicYear) fetchGradeHistory(selectedAcademicYear, selectedSemester !== 'all' ? selectedSemester : undefined);
+    }
+  };
+
+  // In the table rendering logic, use all students as the base list
+  const studentsToShow = useMemo(() => {
+    // If an academic year is selected, show all students
+    if (selectedAcademicYear) return students;
+    // Otherwise, show only students with grades
+    const studentIdsWithGrades = new Set(filteredGrades.map(g => g.student_id));
+    return students.filter(s => studentIdsWithGrades.has(s.id));
+  }, [students, filteredGrades, selectedAcademicYear]);
 
   if (isLoadingGrades) {
     return (
@@ -425,6 +513,19 @@ const GradeManagement = () => {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label className="text-sm font-medium">Academic Year</Label>
+              <Select value={selectedAcademicYear} onValueChange={setSelectedAcademicYear}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select Academic Year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {academicYears.map(year => (
+                    <SelectItem key={year} value={year}>{year}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
              {/* Optional: Add a button or section for managing grade weights */}
             {/* <div className="col-span-full flex justify-end">
                <Button variant="outline" className="flex items-center gap-2">
@@ -433,6 +534,55 @@ const GradeManagement = () => {
                   </Button>
             </div> */}
           </div>
+          <Dialog open={showSetAcademicYearDialog} onOpenChange={setShowSetAcademicYearDialog}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="mt-2 ml-2">Set Academic Year for Students/Grades</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Set Academic Year for Students/Grades</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-2">
+                <Label>Select Students</Label>
+                <div className="max-h-48 overflow-y-auto border rounded p-2">
+                  {students.map(student => (
+                    <div key={student.id} className="flex items-center gap-2 mb-1">
+                      <input
+                        type="checkbox"
+                        id={`student-${student.id}`}
+                        checked={selectedStudents.includes(student.id)}
+                        onChange={e => {
+                          if (e.target.checked) {
+                            setSelectedStudents(prev => [...prev, student.id]);
+                          } else {
+                            setSelectedStudents(prev => prev.filter(id => id !== student.id));
+                          }
+                        }}
+                      />
+                      <label htmlFor={`student-${student.id}`}>{`${student.first_name} ${student.last_name} (${student.student_id})`}</label>
+                    </div>
+                  ))}
+                </div>
+                <Label className="mt-2">Academic Year</Label>
+                <Select value={bulkAcademicYear} onValueChange={setBulkAcademicYear}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select Academic Year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {academicYears.map(year => (
+                      <SelectItem key={year} value={year}>{year}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowSetAcademicYearDialog(false)}>Cancel</Button>
+                <Button onClick={handleBulkSetAcademicYear} disabled={isBulkUpdating || !bulkAcademicYear || selectedStudents.length === 0}>
+                  {isBulkUpdating ? 'Updating...' : 'Set Academic Year'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </CardContent>
       </Card>
 
@@ -467,33 +617,29 @@ const GradeManagement = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                {/* Iterate over unique student IDs and display their grades */}
-                {uniqueStudentIds.length > 0 ? (
-                  uniqueStudentIds.map(studentId => {
-                    const studentGrades = gradesByStudentMap.get(studentId) || [];
-                    const studentInfo = studentMap.get(studentId);
-                    if (!studentInfo) return null; // Skip if student info not found
+                {studentsToShow.length > 0 ? (
+                  studentsToShow.map(studentInfo => {
+                    const studentGrades = filteredGrades.filter(g => g.student_id === studentInfo.id);
                     return (
-                      <TableRow key={studentId}>
+                      <TableRow key={studentInfo.id}>
                         <TableCell>{studentInfo.student_id}</TableCell>
-                        <TableCell>{studentInfo ? `${studentInfo.first_name} ${studentInfo.last_name}` : <Loader2 className="animate-spin h-4 w-4 mx-auto" />}</TableCell>
+                        <TableCell>{`${studentInfo.first_name} ${studentInfo.last_name}`}</TableCell>
                         <TableCell>{studentInfo.filiere}</TableCell>
                         <TableCell>{studentInfo.level}</TableCell>
                         <TableCell>{'N/A'}</TableCell>
                         {uniqueModules.map(module => {
                           const gradeEntry = studentGrades.find(g => g.module_id === module.id);
-                          const moduleInfo = moduleMap.get(module.id);
                           return (
                             <TableCell key={module.id} className="text-center">
                               {gradeEntry ? (
                                 <div className="space-y-1">
-                                  {gradeEntry.assignment1 !== undefined && <div>Assignment 1: {gradeEntry.assignment1}</div>}
-                                  {gradeEntry.assignment2 !== undefined && <div>Assignment 2: {gradeEntry.assignment2}</div>}
-                                  {gradeEntry.midterm !== undefined && <div>Midterm: {gradeEntry.midterm}</div>}
-                                  {gradeEntry.final !== undefined && <div>Final: {gradeEntry.final}</div>}
-                                  {gradeEntry.overall !== undefined && <div className={getGradeColor(gradeEntry.overall)}>Overall: {gradeEntry.overall}</div>}
+                                  {gradeEntry.cc_grade !== undefined && <div>CC: {gradeEntry.cc_grade}</div>}
+                                  {gradeEntry.exam_grade !== undefined && <div>Exam: {gradeEntry.exam_grade}</div>}
+                                  {gradeEntry.module_grade !== undefined && <div className={getGradeColor(gradeEntry.module_grade)}>Module: {gradeEntry.module_grade}</div>}
                                 </div>
-                              ) : 'N/A'}
+                              ) : (
+                                <Button size="sm" variant="outline">Add Grade</Button>
+                              )}
                             </TableCell>
                           );
                         })}
@@ -503,7 +649,7 @@ const GradeManagement = () => {
                   })
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={uniqueModules.length + 6} className="text-center">No grades found for the selected filters.</TableCell>
+                    <TableCell colSpan={uniqueModules.length + 6} className="text-center">No students found for the selected filters.</TableCell>
                   </TableRow>
                 )}
                 </TableBody>

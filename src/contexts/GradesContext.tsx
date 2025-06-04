@@ -36,9 +36,11 @@ export interface EnrichedGrade extends Grade {
 
 interface GradesContextType {
   grades: EnrichedGrade[];
+  gradeHistory: EnrichedGrade[];
   isLoading: boolean;
   error: string | null;
   fetchGrades: () => Promise<void>;
+  fetchGradeHistory: (academicYear: string, semester?: string) => Promise<void>;
   addGrade: (gradeData: Omit<Grade, 'id' | 'created_at' | 'updated_at' | 'overall'>) => Promise<void>;
   updateGrade: (id: string, gradeData: Partial<Omit<Grade, 'id' | 'created_at' | 'updated_at' | 'student_id' | 'module_id'>>) => Promise<void>;
   deleteGrade: (id: string) => Promise<void>;
@@ -48,6 +50,7 @@ const GradesContext = createContext<GradesContextType | undefined>(undefined);
 
 export const GradesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [grades, setGrades] = useState<EnrichedGrade[]>([]);
+  const [gradeHistory, setGradeHistory] = useState<EnrichedGrade[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -77,6 +80,36 @@ export const GradesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         modules: Array.isArray(g.modules) ? g.modules[0] : g.modules,
       }));
       setGrades(mapped as EnrichedGrade[]);
+      setError(null);
+    }
+    setIsLoading(false);
+  };
+
+  const fetchGradeHistory = async (academicYear: string, semester?: string) => {
+    setIsLoading(true);
+    let query = supabase
+      .from('grade_history')
+      .select('id, student_id, module_id, cc_grade, exam_grade, module_grade, academic_year, semester, created_at, updated_at, students:student_id(first_name, last_name, student_id, filiere, level), modules:module_id(code, name, filiere, academic_level, semester, professors(first_name, last_name))')
+      .eq('academic_year', academicYear);
+    if (semester) {
+      query = query.eq('semester', semester);
+    }
+    const { data, error } = await query;
+    if (error) {
+      console.error('Error fetching grade history:', error);
+      setError('Failed to fetch grade history.');
+      toast({ title: 'Error', description: 'Failed to fetch grade history.', variant: 'destructive' });
+      setGradeHistory([]);
+    } else if (data) {
+      const mapped = (data as any[]).map((g) => ({
+        ...g,
+        cc_grade: g.cc_grade !== null && g.cc_grade !== undefined ? parseFloat(g.cc_grade) : undefined,
+        exam_grade: g.exam_grade !== null && g.exam_grade !== undefined ? parseFloat(g.exam_grade) : undefined,
+        module_grade: g.module_grade !== null && g.module_grade !== undefined ? parseFloat(g.module_grade) : undefined,
+        students: Array.isArray(g.students) ? g.students[0] : g.students,
+        modules: Array.isArray(g.modules) ? g.modules[0] : g.modules,
+      }));
+      setGradeHistory(mapped as EnrichedGrade[]);
       setError(null);
     }
     setIsLoading(false);
@@ -133,9 +166,11 @@ export const GradesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   return (
     <GradesContext.Provider value={{
       grades,
+      gradeHistory,
       isLoading,
       error,
       fetchGrades,
+      fetchGradeHistory,
       addGrade,
       updateGrade,
       deleteGrade,

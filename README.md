@@ -1,73 +1,86 @@
-# Welcome to your Lovable project
+# Campus Grade Flow
 
-## Project info
+> **A fun ride, but the journey ends here!**
+>
+> Thank you for checking out this project. I truly enjoyed building Campus Grade Flow, but I am no longer maintaining or working on it. Feel free to explore, learn, or fork it for your own use!
 
-**URL**: https://lovable.dev/projects/ef3dfe67-b1fb-4f6c-a945-145825a19c45
+---
 
-## How can I edit this code?
+## About Campus Grade Flow
 
-There are several ways of editing your application.
+Campus Grade Flow is a modern, full-featured university grade management system designed to streamline academic administration for students, professors, and administrators. Built with a focus on usability, flexibility, and real-world academic workflows, it provides a robust platform for managing grades, modules, filières (academic tracks), and more.
 
-**Use Lovable**
+### Key Features
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/ef3dfe67-b1fb-4f6c-a945-145825a19c45) and start prompting.
+- **Role-Based Dashboards**: Distinct interfaces and permissions for Administrators, Professors, and Students.
+- **Grade Management**: Enter, edit, and finalize grades for each student, module, semester, and academic year. Supports grade history and filtering.
+- **Filière & Module Management**: Dynamically manage academic tracks (filières) and modules, with filtering by level, semester, and more.
+- **Student & Professor Management**: Add, edit, and manage student and professor records, including assignment to modules and filières.
+- **Transcript Generation**: Students can view and download their academic transcripts by semester and year.
+- **Advanced Filtering**: Filter grades and records by filière, level, semester, module, and academic year.
+- **Secure Authentication**: Role-based login and access control.
+- **Modern UI**: Built with React, shadcn-ui, and Tailwind CSS for a clean, responsive experience.
 
-Changes made via Lovable will be committed automatically to this repo.
+### User Roles
 
-**Use your preferred IDE**
+- **Administrators**: Manage all aspects of the system—departments, modules, filières, students, professors, grades, reports, and system settings.
+- **Professors**: Enter and update grades for their assigned modules and classes.
+- **Students**: View grades, download transcripts, and manage their profile.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+---
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Getting Started
 
-Follow these steps:
+### Prerequisites
+- [Node.js](https://nodejs.org/) & npm
+- (Optional) [Supabase](https://supabase.com/) account for backend/database
+
+### Setup
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
+# 1. Clone the repository
 git clone <YOUR_GIT_URL>
+cd campus-grade-flow
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# 2. Install dependencies
+npm install
 
-# Step 3: Install the necessary dependencies.
-npm i
+# 3. Configure environment variables
+# (Set up your Supabase keys in a .env file if needed)
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# 4. Start the development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Editing the Code
+You can use your favorite IDE, edit directly on GitHub, or use cloud environments like GitHub Codespaces. See the original instructions below for more details.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+---
 
-**Use GitHub Codespaces**
+## Technologies Used
+- **Vite** (build tool)
+- **TypeScript**
+- **React**
+- **shadcn-ui** (UI components)
+- **Tailwind CSS**
+- **Supabase** (backend/database)
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+## Deployment
+You can deploy this project using [Lovable](https://lovable.dev/projects/ef3dfe67-b1fb-4f6c-a945-145825a19c45) or your preferred hosting provider. For custom domains, refer to the Lovable documentation.
 
-This project is built with:
+---
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## License & Status
+This project is no longer maintained. You are welcome to fork, modify, or use it as you wish. No support or updates will be provided.
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/ef3dfe67-b1fb-4f6c-a945-145825a19c45) and click on Share -> Publish.
+## Original Lovable Project Info
 
-## Can I connect a custom domain to my Lovable project?
+**URL**: https://lovable.dev/projects/ef3dfe67-b1fb-4f6c-a945-145825a19c45
 
-Yes, you can!
+---
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+*Thanks for stopping by, and happy coding!*
