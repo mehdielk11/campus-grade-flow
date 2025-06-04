@@ -57,6 +57,29 @@ You can use your favorite IDE, edit directly on GitHub, or use cloud environment
 
 ---
 
+## Supabase Setup
+
+To use this project, you must set up a Supabase backend with the required schema:
+
+1. **Create a Supabase project** at [supabase.com](https://supabase.com/).
+2. **Run the migration SQL** in `supabase/migrations/001_init.sql` using the Supabase SQL editor to create all required tables and relationships.
+3. **Configure environment variables** in a `.env` file:
+   ```
+   # Frontend (Vite/React)
+   VITE_SUPABASE_URL=your-supabase-url
+   VITE_SUPABASE_ANON_KEY=your-anon-key
+
+   # Backend/admin scripts (optional, for server-side or admin use)
+   SUPABASE_URL=your-supabase-url
+   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+   ```
+   - `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are required for the frontend.
+   - `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are only needed for backend scripts or admin tools.
+   - **Never expose `SUPABASE_SERVICE_ROLE_KEY` to the frontend or commit it to public repositories.**
+4. **See [`DATABASE.md`](DATABASE.md)** for a full description of the schema, tables, and relationships.
+
+---
+
 ## Technologies Used
 - **Vite** (build tool)
 - **TypeScript**
