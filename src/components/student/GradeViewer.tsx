@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { EnrichedGrade } from '@/contexts/GradesContext';
 
 interface Grade {
   id: string;
@@ -47,12 +48,16 @@ const mockGrades: Grade[] = [
   }
 ];
 
-const GradeViewer = () => {
+interface GradeViewerProps {
+  grades?: EnrichedGrade[];
+}
+
+const GradeViewer: React.FC<GradeViewerProps> = ({ grades }) => {
+  const displayGrades = grades && grades.length > 0 ? grades : mockGrades;
   const getGradeColor = (grade: number) => {
-    if (grade >= 90) return 'bg-green-500';
-    if (grade >= 80) return 'bg-blue-500';
-    if (grade >= 70) return 'bg-yellow-500';
-    if (grade >= 60) return 'bg-orange-500';
+    if (grade >= 16) return 'bg-green-500';
+    if (grade >= 12) return 'bg-blue-500';
+    if (grade >= 10) return 'bg-yellow-500';
     return 'bg-red-500';
   };
 
@@ -65,7 +70,7 @@ const GradeViewer = () => {
             <CardDescription>Enrolled This Semester</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-purple-600">{mockGrades.length}</div>
+            <div className="text-3xl font-bold text-purple-600">{displayGrades.length}</div>
             <p className="text-sm text-gray-500 mt-1">active courses</p>
           </CardContent>
         </Card>
@@ -73,36 +78,35 @@ const GradeViewer = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Grade Summary - Fall 2024</CardTitle>
+          <CardTitle>Grade Summary</CardTitle>
           <CardDescription>Your academic performance this semester</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {mockGrades.map((grade) => (
-              <div key={grade.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Badge variant="outline">{grade.moduleCode}</Badge>
-                    <h3 className="font-semibold">{grade.courseName}</h3>
+            {displayGrades.map((grade) => {
+              const score = (grade as any).module_grade ?? grade.grade ?? '--';
+              return (
+                <div key={grade.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Badge variant="outline">{(grade as any).modules?.code || grade.moduleCode}</Badge>
+                      <h3 className="font-semibold">{(grade as any).modules?.name || grade.courseName}</h3>
+                    </div>
+                    <p className="text-sm text-gray-600">{(grade as any).modules?.name || grade.moduleName}</p>
                   </div>
-                  <p className="text-sm text-gray-600">{grade.moduleName}</p>
-                </div>
-                
-                <div className="text-right space-y-2">
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <div className="text-2xl font-bold">{grade.grade}%</div>
-                      <Badge className={`${getGradeColor(grade.grade)} text-white`}>
-                        {grade.letterGrade}
-                      </Badge>
+                  <div className="text-right space-y-2">
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <div className={`text-2xl font-bold ${getGradeColor(score)}`}>{score}</div>
+                      </div>
+                    </div>
+                    <div className="w-24">
+                      <Progress value={typeof score === 'number' ? (score / 20) * 100 : 0} className="h-2" />
                     </div>
                   </div>
-                  <div className="w-24">
-                    <Progress value={grade.grade} className="h-2" />
-                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </CardContent>
       </Card>

@@ -11,7 +11,8 @@ export interface Module {
   academic_level?: string;
   academicLevel?: string;
   semester: string;
-  professor?: string;
+  professor_id?: string;
+  professors?: { first_name: string; last_name: string } | null;
   capacity?: number;
   status?: 'active' | 'inactive';
   created_at?: string;
@@ -40,7 +41,9 @@ export const ModulesProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const fetchModules = async (limit?: number, offset?: number) => {
     setIsLoading(true);
-    let query = supabase.from('modules').select('id, code, name, description, filiere, academic_level, semester, professor_id, capacity, status, created_at, updated_at, cc_percentage, exam_percentage');
+    let query = supabase
+      .from('modules')
+      .select('id, code, name, description, filiere, academic_level, semester, professor_id, capacity, status, created_at, updated_at, cc_percentage, exam_percentage, professors(first_name, last_name)');
     if (typeof limit === 'number') query = query.limit(limit);
     if (typeof offset === 'number') query = query.range(offset, offset + (limit ? limit - 1 : 9));
     const { data, error } = await query;
@@ -51,7 +54,11 @@ export const ModulesProvider: React.FC<{ children: React.ReactNode }> = ({ child
       toast({ title: 'Error', description: 'Failed to fetch modules.', variant: 'destructive' });
       setModules([]);
     } else if (data) {
-      setModules(data as Module[]);
+      const mapped = (data as any[]).map((mod) => ({
+        ...mod,
+        professors: Array.isArray(mod.professors) ? mod.professors[0] || null : mod.professors || null,
+      }));
+      setModules(mapped as Module[]);
       setError(null);
     }
     setIsLoading(false);

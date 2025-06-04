@@ -1,77 +1,67 @@
 import React, { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import GradeViewer from '@/components/student/GradeViewer';
 import ProfileManagement from '@/components/student/ProfileManagement';
 import TranscriptDownloader from '@/components/student/TranscriptDownloader';
+import { useAuth } from '@/contexts/AuthContext';
+import { useGrades } from '@/contexts/GradesContext';
+import { Badge } from '@/components/ui/badge';
+import { useModules } from '@/contexts/ModulesContext';
+import { useStudents } from '@/contexts/StudentsContext';
 
 const StudentDashboard = () => {
-  const [selectedTab, setSelectedTab] = useState('overview');
+  const { user } = useAuth();
+  const { grades, isLoading } = useGrades();
+  const { modules, isLoading: isLoadingModules } = useModules();
+  const { students, isLoading: isLoadingStudents } = useStudents();
 
-  // Mock data - this would come from API in real implementation
-  const mockData = {
-    totalCredits: 9,
-    activeCourses: 3,
-    grades: [
-      { code: 'CS101', name: 'Introduction to Programming', department: 'Computer Science Fundamentals', credits: 3, grade: 85 },
-      { code: 'MATH201', name: 'Calculus II', department: 'Mathematics', credits: 4, grade: 78 },
-      { code: 'ENG101', name: 'Academic Writing', department: 'English Literature', credits: 2, grade: 92 }
-    ]
-  };
+  // Filter grades for the current student
+  const studentGrades = React.useMemo(() => {
+    if (!user || !user.studentId) return [];
+    return grades.filter(g => g.students?.student_id === user.studentId);
+  }, [grades, user]);
 
+  // Count unique modules
+  const uniqueModuleIds = React.useMemo(() => {
+    return Array.from(new Set(studentGrades.map(g => g.module_id)));
+  }, [studentGrades]);
+
+  // Find the current student object
+  const currentStudent = React.useMemo(() => {
+    if (!user || !user.studentId) return undefined;
+    return students.find(s => s.student_id === user.studentId);
+  }, [students, user]);
+
+  // Get all modules for the student's filière and level
+  const studentModules = React.useMemo(() => {
+    if (!currentStudent) return [];
+    return modules.filter(
+      (m) => m.filiere === currentStudent.filiere && (m.academic_level === `Level ${currentStudent.level}` || m.academicLevel === `Level ${currentStudent.level}`)
+    );
+  }, [modules, currentStudent]);
+
+  // Map moduleId to grade for fast lookup
+  const gradeMap = React.useMemo(() => {
+    const map = new Map();
+    studentGrades.forEach(g => map.set(g.module_id, g));
+    return map;
+  }, [studentGrades]);
+
+  // Helper functions
   const getGradeColor = (grade: number) => {
-    if (grade >= 90) return 'text-green-600';
-    if (grade >= 80) return 'text-blue-600';
-    if (grade >= 70) return 'text-yellow-600';
+    if (grade >= 16) return 'text-green-600';
+    if (grade >= 12) return 'text-blue-600';
+    if (grade >= 10) return 'text-yellow-600';
     return 'text-red-600';
   };
-
   const getGradeLetter = (grade: number) => {
-    if (grade >= 90) return 'A';
-    if (grade >= 80) return 'B';
-    if (grade >= 70) return 'C';
-    return 'D';
+    if (grade >= 16) return 'A';
+    if (grade >= 14) return 'B';
+    if (grade >= 12) return 'C';
+    if (grade >= 10) return 'D';
+    return 'F';
   };
-
-  if (selectedTab !== 'overview') {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Student Dashboard</h1>
-            <p className="text-gray-600 mt-2">Welcome back! Here's your academic overview.</p>
-          </div>
-          <button 
-            onClick={() => setSelectedTab('overview')}
-            className="text-blue-600 hover:text-blue-800 underline"
-          >
-            Back to Overview
-          </button>
-        </div>
-
-        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="grades">My Grades</TabsTrigger>
-            <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="transcripts">Transcripts</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="grades" className="space-y-6">
-            <GradeViewer />
-          </TabsContent>
-
-          <TabsContent value="profile" className="space-y-6">
-            <ProfileManagement />
-          </TabsContent>
-
-          <TabsContent value="transcripts" className="space-y-6">
-            <TranscriptDownloader />
-          </TabsContent>
-        </Tabs>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -80,38 +70,17 @@ const StudentDashboard = () => {
         <p className="text-gray-600 mt-2">Welcome back! Here's your academic overview.</p>
       </div>
 
-      {/* Quick Access Tabs */}
-      <div className="flex space-x-4 mb-6">
-        <button 
-          onClick={() => setSelectedTab('grades')}
-          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-        >
-          My Grades
-        </button>
-        <button 
-          onClick={() => setSelectedTab('profile')}
-          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-        >
-          Profile
-        </button>
-        <button 
-          onClick={() => setSelectedTab('transcripts')}
-          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-        >
-          Transcripts
-        </button>
-      </div>
-
+      {/* Main Content Area */}
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-medium text-gray-700">Courses</CardTitle>
+            <CardTitle className="text-lg font-medium text-gray-700">Modules</CardTitle>
             <p className="text-sm text-gray-500">Enrolled This Semester</p>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-purple-600">{mockData.activeCourses}</div>
-            <p className="text-sm text-gray-500">active courses</p>
+            <div className="text-3xl font-bold text-purple-600">{uniqueModuleIds.length}</div>
+            <p className="text-sm text-gray-500">active modules</p>
           </CardContent>
         </Card>
       </div>
@@ -119,34 +88,77 @@ const StudentDashboard = () => {
       {/* Grade Summary */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl font-semibold">Grade Summary - Fall 2024</CardTitle>
+          <CardTitle className="text-xl font-semibold">Grade Summary</CardTitle>
           <p className="text-gray-600">Your academic performance this semester</p>
         </CardHeader>
         <CardContent className="space-y-4">
-          {mockData.grades.map((course) => (
-            <div key={course.code} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-gray-900">{course.code}</span>
-                  <span className="text-lg font-semibold text-gray-900">{course.name}</span>
-                </div>
-                <p className="text-sm text-gray-600">{course.department}</p>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="text-right">
-                  <div className={`text-2xl font-bold ${getGradeColor(course.grade)}`}>
-                    {course.grade}%
-                  </div>
-                  <div className={`text-sm font-medium ${getGradeColor(course.grade)}`}>
-                    {getGradeLetter(course.grade)}
-                  </div>
-                </div>
-                <div className="w-24">
-                  <Progress value={course.grade} className="h-2" />
-                </div>
-              </div>
+          {isLoading || isLoadingModules || isLoadingStudents ? (
+            <div>Loading grades...</div>
+          ) : !currentStudent ? (
+            <div>Student information not found.</div>
+          ) : studentModules.length === 0 ? (
+            <div>No modules found for your filière and level.</div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              {studentModules.map((module) => {
+                const grade = gradeMap.get(module.id);
+                return (
+                  <Card key={module.id} className="relative mb-0 p-0 shadow-md border-0 max-w-md w-full flex-1 min-w-[300px]">
+                    {/* Vertical left accent bar */}
+                    <div className="absolute top-0 left-0 h-full w-2 rounded-l-lg" style={{ background: '#000' }} />
+                    <CardContent className="pt-4 pb-1 pl-6 pr-4">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant="outline" className="bg-purple-100 text-purple-700 border-none text-xs px-2 py-0.5">{module.code}</Badge>
+                        <span className="text-lg font-bold text-gray-900">{module.name}</span>
+                      </div>
+                      <div className="flex flex-col gap-2 mb-3">
+                        <div className="flex items-center gap-2 text-gray-500">
+                          {/* Academic SVG icon */}
+                          <svg width="18" height="18" fill="none" viewBox="0 0 24 24" className="inline-block mr-1"><rect x="3" y="5" width="18" height="14" rx="2" stroke="#6b7280" strokeWidth="2"/><path d="M3 7h18" stroke="#6b7280" strokeWidth="2"/></svg>
+                          <span className="text-sm font-medium">{module.filiere} - {module.academic_level || module.academicLevel} - {module.semester}</span>
+                        </div>
+                        {module.professors ? (
+                          <div className="flex items-center gap-2 text-sm font-medium text-gray-500">
+                            {/* Professor SVG icon */}
+                            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" className="inline-block mr-1"><circle cx="12" cy="8" r="4" stroke="#6b7280" strokeWidth="2"/><path d="M4 20c0-2.21 3.582-4 8-4s8 1.79 8 4" stroke="#6b7280" strokeWidth="2"/></svg>
+                            <span>Professor: {module.professors.first_name} {module.professors.last_name}</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 text-sm font-medium text-gray-500">
+                            {/* Professor SVG icon */}
+                            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" className="inline-block mr-1"><circle cx="12" cy="8" r="4" stroke="#6b7280" strokeWidth="2"/><path d="M4 20c0-2.21 3.582-4 8-4s8 1.79 8 4" stroke="#6b7280" strokeWidth="2"/></svg>
+                            <span>Professor: --</span>
+                          </div>
+                        )}
+                      </div>
+                      <hr className="border-t border-gray-200 my-3" />
+                      {/* Grades grid */}
+                      <div className="grid grid-cols-3 gap-2 mb-2">
+                        <div className="flex flex-col items-center justify-center bg-gray-50 rounded-lg py-2">
+                          {/* Document SVG */}
+                          <svg width="24" height="24" fill="none" viewBox="0 0 24 24" className="mb-0.5"><rect x="5" y="3" width="14" height="18" rx="2" stroke="#6b7280" strokeWidth="2"/><path d="M9 7h6M9 11h6M9 15h2" stroke="#6b7280" strokeWidth="2"/></svg>
+                          <span className="text-[13px] font-semibold text-gray-700 mb-0.5">CC</span>
+                          <span className="text-base font-bold text-gray-900">{grade?.cc_grade ?? '--'}</span>
+                        </div>
+                        <div className="flex flex-col items-center justify-center bg-gray-50 rounded-lg py-2">
+                          {/* Graduation Cap SVG */}
+                          <svg width="24" height="24" fill="none" viewBox="0 0 24 24" className="mb-0.5"><path d="M3 10l9-5 9 5-9 5-9-5z" stroke="#6b7280" strokeWidth="2"/><path d="M12 15v-5" stroke="#6b7280" strokeWidth="2"/><path d="M7 15c0 2 2.5 3 5 3s5-1 5-3" stroke="#6b7280" strokeWidth="2"/></svg>
+                          <span className="text-[13px] font-semibold text-gray-700 mb-0.5">Exam</span>
+                          <span className="text-base font-bold text-gray-900">{grade?.exam_grade ?? '--'}</span>
+                        </div>
+                        <div className="flex flex-col items-center justify-center bg-gray-50 rounded-lg py-2">
+                          {/* Medal SVG */}
+                          <svg width="24" height="24" fill="none" viewBox="0 0 24 24" className="mb-0.5"><circle cx="12" cy="10" r="4" stroke="#6b7280" strokeWidth="2"/><path d="M8 16l-2 4m10-4l2 4" stroke="#6b7280" strokeWidth="2"/></svg>
+                          <span className="text-[13px] font-semibold text-gray-700 mb-0.5">Final</span>
+                          <span className="text-base font-bold text-gray-900">{grade?.module_grade ?? '--'}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
-          ))}
+          )}
         </CardContent>
       </Card>
     </div>

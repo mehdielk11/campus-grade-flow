@@ -59,7 +59,7 @@ export const GradesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setIsLoading(true);
     const { data, error } = await supabase
       .from('grades')
-      .select('id, student_id, module_id, cc_grade, exam_grade, module_grade, created_at, updated_at, students:student_id(first_name, last_name, student_id, filiere, level), modules:module_id(code, name, filiere, academic_level, semester)');
+      .select('id, student_id, module_id, cc_grade, exam_grade, module_grade, created_at, updated_at, students:student_id(first_name, last_name, student_id, filiere, level), modules:module_id(code, name, filiere, academic_level, semester, professors(first_name, last_name))');
 
     if (error) {
       console.error('Error fetching grades:', error);
@@ -84,7 +84,7 @@ export const GradesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const addGrade = async (gradeData: Omit<Grade, 'id' | 'created_at' | 'updated_at' | 'overall'>) => {
     // No calculation, just insert with provided fields
-    const { data: dataAdd, error: errorAdd } = await supabase.from('grades').insert([gradeData]).select('*, students!inner(first_name, last_name, student_id, filiere, level), modules!inner(code, name, filiere, academic_level, semester)');
+    const { data: dataAdd, error: errorAdd } = await supabase.from('grades').insert([gradeData]).select('*, students!inner(first_name, last_name, student_id, filiere, level), modules!inner(code, name, filiere, academic_level, semester, professors(first_name, last_name))');
 
     if (errorAdd) {
       console.error('Error adding grade:', errorAdd);
@@ -98,7 +98,7 @@ export const GradesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const updateGrade = async (id: string, gradeData: Partial<Omit<Grade, 'id' | 'created_at' | 'updated_at' | 'student_id' | 'module_id'>>) => {
-    const { data: dataUpdate, error: errorUpdate } = await supabase.from('grades').update(gradeData).eq('id', id).select('*, students!inner(first_name, last_name, student_id, filiere, level), modules!inner(code, name, filiere, academic_level, semester)');
+    const { data: dataUpdate, error: errorUpdate } = await supabase.from('grades').update(gradeData).eq('id', id).select('*, students!inner(first_name, last_name, student_id, filiere, level), modules!inner(code, name, filiere, academic_level, semester, professors(first_name, last_name))');
 
     if (errorUpdate) {
       console.error('Error updating grade:', errorUpdate);
