@@ -29,13 +29,6 @@ const StudentManagement = () => {
   const [generatedStudentId, setGeneratedStudentId] = useState<string | null>(null);
   const [generatedEmail, setGeneratedEmail] = useState<string | null>(null);
   const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
-  const [isPromoteDialogOpen, setIsPromoteDialogOpen] = useState(false);
-  const [promoteTarget, setPromoteTarget] = useState<Student | null>(null);
-  const [promoteLevel, setPromoteLevel] = useState<number | null>(null);
-  const [promoteYear, setPromoteYear] = useState<string>('');
-  const [promoteReason, setPromoteReason] = useState('');
-  const [isPromoting, setIsPromoting] = useState(false);
-  const [promoteFiliere, setPromoteFiliere] = useState<string>('');
 
   const statuses = ['Active', 'Inactive', 'Graduated'];
 
@@ -105,70 +98,6 @@ const StudentManagement = () => {
     setGeneratedEmail(`${newId}@supmti.ma`);
     setGeneratedPassword(newId);
     setIsDialogOpen(true);
-  };
-
-  // Helper: Get available next levels for a student
-  const getNextLevels = (student: Student) => {
-    const filiere = filieres.find(f => f.code === student.filiere);
-    if (!filiere || !Array.isArray(filiere.levels)) return [];
-    return filiere.levels.filter((lvl: number) => typeof lvl === 'number' && lvl > (student.level || 0));
-  };
-
-  // Helper: Get available academic years (simple: current year and next year)
-  const getAcademicYears = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    return [`${year}-${year+1}`, `${year+1}-${year+2}`];
-  };
-
-  const handleOpenPromote = (student: Student) => {
-    setPromoteTarget(student);
-    const nextLevels = getNextLevels(student);
-    setPromoteLevel(nextLevels.length > 0 ? nextLevels[0] : null);
-    setPromoteYear(getAcademicYears()[0]);
-    setPromoteReason('');
-    setPromoteFiliere(student.filiere || (filieres[0]?.code ?? ''));
-    setIsPromoteDialogOpen(true);
-  };
-
-  const handlePromote = async () => {
-    if (!promoteTarget || !promoteLevel || !promoteYear || !promoteFiliere) return;
-    setIsPromoting(true);
-    try {
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !sessionData?.session?.access_token) {
-        throw new Error('Could not get access token');
-      }
-      const accessToken = sessionData.session.access_token;
-      const res = await fetch('https://hfamzgfygflycfcphxpf.supabase.co/functions/v1/promoteStudent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
-        },
-        body: JSON.stringify({
-          student_id: promoteTarget.id,
-          to_level: promoteLevel,
-          academic_year: promoteYear,
-          promoted_by: currentUser?.id,
-          promotion_reason: promoteReason,
-          filiere: promoteFiliere
-        })
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        toast({ title: 'Promotion successful', description: `${promoteTarget.first_name} ${promoteTarget.last_name} promoted to Level ${promoteLevel} (${promoteFiliere})` });
-        setIsPromoteDialogOpen(false);
-        setPromoteTarget(null);
-        fetchStudents();
-      } else {
-        toast({ title: 'Promotion failed', description: data.error || 'Unknown error', variant: 'destructive' });
-      }
-    } catch (e) {
-      toast({ title: 'Promotion failed', description: (e as Error).message, variant: 'destructive' });
-    } finally {
-      setIsPromoting(false);
-    }
   };
 
   const StudentForm = ({ generatedStudentId, generatedEmail, generatedPassword }) => {
@@ -505,9 +434,6 @@ const StudentManagement = () => {
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
-                        <Button variant="secondary" size="sm" onClick={() => handleOpenPromote(student)} disabled={getNextLevels(student).length === 0} title="Promote Student">
-                          <GraduationCap className="h-4 w-4" />
-                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -516,74 +442,6 @@ const StudentManagement = () => {
             </Table>
           </div>
           )}
-          <Dialog open={isPromoteDialogOpen} onOpenChange={setIsPromoteDialogOpen}>
-            <DialogContent className="sm:max-w-[400px]">
-              <DialogHeader>
-                <DialogTitle>Promote Student</DialogTitle>
-              </DialogHeader>
-              {promoteTarget && (
-                <div className="space-y-4">
-                  <div>
-                    <Label>Student</Label>
-                    <div className="font-semibold">{promoteTarget.first_name} {promoteTarget.last_name} ({promoteTarget.student_id})</div>
-                  </div>
-                  <div>
-                    <Label>Current Filière</Label>
-                    <div>{promoteTarget.filiere}</div>
-                  </div>
-                  <div>
-                    <Label>Promote To Filière</Label>
-                    <Select value={promoteFiliere} onValueChange={setPromoteFiliere}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select filière" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {filieres.map(fil => (
-                          <SelectItem key={fil.code} value={fil.code}>{fil.code}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Promote To Level</Label>
-                    <Select value={promoteLevel?.toString() || ''} onValueChange={v => setPromoteLevel(Number(v))}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select level" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {getNextLevels({ ...promoteTarget, filiere: promoteFiliere }).map(lvl => (
-                          <SelectItem key={lvl} value={lvl.toString()}>Level {lvl}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Academic Year</Label>
-                    <Select value={promoteYear} onValueChange={setPromoteYear}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select year" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {getAcademicYears().map(yr => (
-                          <SelectItem key={yr} value={yr}>{yr}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Reason (optional)</Label>
-                    <Input value={promoteReason} onChange={e => setPromoteReason(e.target.value)} placeholder="Reason for promotion" />
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setIsPromoteDialogOpen(false)} disabled={isPromoting}>Cancel</Button>
-                    <Button onClick={handlePromote} disabled={!promoteLevel || !promoteYear || !promoteFiliere || isPromoting}>
-                      {isPromoting ? 'Promoting...' : 'Promote'}
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </DialogContent>
-          </Dialog>
         </CardContent>
       </Card>
     </div>
