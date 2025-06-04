@@ -9,12 +9,19 @@ import { useGrades } from '@/contexts/GradesContext';
 import { Badge } from '@/components/ui/badge';
 import { useModules } from '@/contexts/ModulesContext';
 import { useStudents } from '@/contexts/StudentsContext';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const StudentDashboard = () => {
   const { user } = useAuth();
   const { grades, isLoading } = useGrades();
   const { modules, isLoading: isLoadingModules } = useModules();
   const { students, isLoading: isLoadingStudents } = useStudents();
+
+  // Filter state
+  const [selectedSemester, setSelectedSemester] = useState('all');
+  const [selectedLevel, setSelectedLevel] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Filter grades for the current student
   const studentGrades = React.useMemo(() => {
@@ -48,21 +55,37 @@ const StudentDashboard = () => {
     return map;
   }, [studentGrades]);
 
-  // Group modules by semester
+  // Get unique semesters and levels from studentModules
+  const availableSemesters = React.useMemo(() => {
+    return Array.from(new Set(studentModules.map(m => m.semester))).filter(Boolean);
+  }, [studentModules]);
+  const availableLevels = React.useMemo(() => {
+    return Array.from(new Set(studentModules.map(m => m.academic_level || m.academicLevel))).filter(Boolean);
+  }, [studentModules]);
+
+  // Apply filters and search to studentModules
+  const filteredModules = React.useMemo(() => {
+    return studentModules.filter(m =>
+      (selectedSemester === 'all' || m.semester === selectedSemester) &&
+      (selectedLevel === 'all' || m.academic_level === selectedLevel || m.academicLevel === selectedLevel) &&
+      (searchTerm.trim() === '' || m.name.toLowerCase().includes(searchTerm.trim().toLowerCase()))
+    );
+  }, [studentModules, selectedSemester, selectedLevel, searchTerm]);
+
+  // Group filtered modules by semester
   const modulesBySemester = React.useMemo(() => {
-    const groups: { [semester: string]: typeof studentModules } = {};
-    studentModules.forEach((mod) => {
+    const groups: { [semester: string]: typeof filteredModules } = {};
+    filteredModules.forEach((mod) => {
       const sem = mod.semester || 'Unknown';
       if (!groups[sem]) groups[sem] = [];
       groups[sem].push(mod);
     });
     return groups;
-  }, [studentModules]);
+  }, [filteredModules]);
 
-  // Get sorted semester keys (e.g., Semester 1, Semester 2, ...)
+  // Get sorted semester keys
   const sortedSemesters = React.useMemo(() => {
     return Object.keys(modulesBySemester).sort((a, b) => {
-      // Extract number for sorting, fallback to string compare
       const numA = parseInt(a.replace(/[^0-9]/g, ''));
       const numB = parseInt(b.replace(/[^0-9]/g, ''));
       if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
@@ -112,14 +135,55 @@ const StudentDashboard = () => {
         <CardHeader>
           <CardTitle className="text-xl font-semibold">Grade Summary</CardTitle>
           <p className="text-gray-600">Your academic performance this semester</p>
+          {/* Filter Bar */}
+          <div className="flex flex-wrap gap-4 mt-4 items-end">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Semester</label>
+              <Select value={selectedSemester} onValueChange={setSelectedSemester}>
+                <SelectTrigger className="w-36">
+                  <SelectValue placeholder="All Semesters" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Semesters</SelectItem>
+                  {availableSemesters.map(sem => (
+                    <SelectItem key={sem} value={sem}>{sem}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Academic Year</label>
+              <Select value={selectedLevel} onValueChange={setSelectedLevel}>
+                <SelectTrigger className="w-36">
+                  <SelectValue placeholder="All Years" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Years</SelectItem>
+                  {availableLevels.map(level => (
+                    <SelectItem key={level} value={level}>{level}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex-1 min-w-[180px]">
+              <label className="block text-xs font-medium text-gray-500 mb-1">Search Module</label>
+              <Input
+                type="text"
+                placeholder="Type module name..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="w-full"
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {isLoading || isLoadingModules || isLoadingStudents ? (
             <div>Loading grades...</div>
           ) : !currentStudent ? (
             <div>Student information not found.</div>
-          ) : studentModules.length === 0 ? (
-            <div>No modules found for your filière and level.</div>
+          ) : filteredModules.length === 0 ? (
+            <div>No modules found for your filters.</div>
           ) : (
             <div className="space-y-8">
               {sortedSemesters.map((semester) => (
