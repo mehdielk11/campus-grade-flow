@@ -12,11 +12,6 @@ export interface Grade {
   cc_grade?: number;
   exam_grade?: number;
   module_grade?: number;
-  assignment1?: number;
-  assignment2?: number;
-  midterm?: number;
-  final?: number;
-  overall?: number;
   created_at: string;
   updated_at: string;
 }
@@ -64,7 +59,7 @@ export const GradesProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setIsLoading(true);
     const { data, error } = await supabase
       .from('grades')
-      .select('id, student_id, module_id, cc_grade, exam_grade, module_grade, assignment1, assignment2, midterm, final, overall, created_at, updated_at, students:student_id(first_name, last_name, student_id, filiere, level), modules:module_id(code, name, filiere, academic_level, semester)');
+      .select('id, student_id, module_id, cc_grade, exam_grade, module_grade, created_at, updated_at, students:student_id(first_name, last_name, student_id, filiere, level), modules:module_id(code, name, filiere, academic_level, semester)');
 
     if (error) {
       console.error('Error fetching grades:', error);

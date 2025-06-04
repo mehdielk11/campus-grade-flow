@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -84,7 +83,7 @@ const ProfileManagement = () => {
                 id="firstName"
                 value={formData.firstName}
                 onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                disabled={!isEditing}
+                disabled={true}
               />
             </div>
             <div className="space-y-2">
@@ -93,7 +92,7 @@ const ProfileManagement = () => {
                 id="lastName"
                 value={formData.lastName}
                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                disabled={!isEditing}
+                disabled={true}
               />
             </div>
             <div className="space-y-2">
@@ -103,7 +102,7 @@ const ProfileManagement = () => {
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                disabled={!isEditing}
+                disabled={true}
               />
             </div>
             <div className="space-y-2">

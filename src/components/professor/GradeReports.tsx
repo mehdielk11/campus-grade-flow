@@ -52,7 +52,7 @@ const GradeReports = () => {
       { range: '18-20', min: 18, max: 20, count: 0 },
     ];
     moduleGrades.forEach(g => {
-      const val = g.module_grade ?? g.overall ?? 0;
+      const val = g.module_grade ?? 0;
       for (const bin of bins) {
         if (val >= bin.min && val <= bin.max) {
           bin.count++;
@@ -62,19 +62,6 @@ const GradeReports = () => {
     });
     const total = moduleGrades.length || 1;
     return bins.map(b => ({ ...b, percentage: Math.round((b.count / total) * 100) }));
-  }, [moduleGrades]);
-
-  // Compute assignment performance (mocked as average, highest, lowest for each field)
-  const performanceData = useMemo(() => {
-    const keys = ['assignment1', 'assignment2', 'midterm', 'final'] as const;
-    return keys.map(key => {
-      const values = moduleGrades.map(g => g[key] ?? 0).filter(v => typeof v === 'number');
-      if (values.length === 0) return { assignment: key, average: 0, highest: 0, lowest: 0 };
-      const average = Math.round(values.reduce((a, b) => a + b, 0) / values.length);
-      const highest = Math.max(...values);
-      const lowest = Math.min(...values);
-      return { assignment: key.charAt(0).toUpperCase() + key.slice(1), average, highest, lowest };
-    });
   }, [moduleGrades]);
 
   const calculateStats = () => {
@@ -181,7 +168,6 @@ const GradeReports = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="distribution">Grade Distribution</SelectItem>
-                  <SelectItem value="performance">Assignment Performance</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -197,7 +183,7 @@ const GradeReports = () => {
               </Button>
             </div>
           </div>
-          {reportType === 'distribution' ? (
+          {reportType === 'distribution' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
@@ -241,25 +227,6 @@ const GradeReports = () => {
                 </CardContent>
               </Card>
             </div>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Assignment Performance Trends</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={400}>
-                  <BarChart data={performanceData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="assignment" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="average" fill="#3b82f6" name="Average" />
-                    <Bar dataKey="highest" fill="#22c55e" name="Highest" />
-                    <Bar dataKey="lowest" fill="#ef4444" name="Lowest" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
           )}
         </CardContent>
       </Card>

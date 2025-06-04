@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudents, Student } from '@/contexts/StudentsContext';
 import { useFilieres } from '@/contexts/FilieresContext';
+import { nanoid } from 'nanoid';
 
 const StudentManagement = () => {
   const { toast } = useToast();
@@ -24,8 +25,9 @@ const StudentManagement = () => {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState({ filiere: 'all', level: 'all', status: 'all' });
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [generatedStudentId, setGeneratedStudentId] = useState<string | null>(null);
+  const [generatedEmail, setGeneratedEmail] = useState<string | null>(null);
+  const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
 
   const statuses = ['Active', 'Inactive', 'Graduated'];
 
@@ -85,16 +87,50 @@ const StudentManagement = () => {
 
   const canManagePasswords = false;
 
-  const StudentForm = () => {
-    const [formData, setFormData] = useState<Partial<Student>>(selectedStudent || { 
-      filiere: filieres.length > 0 ? filieres[0].code : '',
-      level: 1, 
-      status: 'Active',
+  const handleOpenAddStudent = () => {
+    setSelectedStudent(null);
+    let newId;
+    do {
+      newId = 'STU-' + nanoid(8).toUpperCase();
+    } while (students.some(s => s.student_id === newId));
+    setGeneratedStudentId(newId);
+    setGeneratedEmail(`${newId}@supmti.ma`);
+    setGeneratedPassword(newId);
+    setIsDialogOpen(true);
+  };
+
+  const StudentForm = ({ generatedStudentId, generatedEmail, generatedPassword }) => {
+    const isEdit = !!selectedStudent;
+    const [formData, setFormData] = useState<Partial<Student> & { password?: string }>(() => {
+      if (selectedStudent) return selectedStudent;
+      return {
+        filiere: filieres.length > 0 ? filieres[0].code : '',
+        level: 1,
+        status: 'Active',
+        password: generatedPassword!,
+        student_id: generatedStudentId!,
+        email: generatedEmail!,
+      };
     });
+    const [showNewPassword, setShowNewPassword] = useState(false);
 
     const selectedFiliere = filieres.find(f => f.code === formData.filiere);
     const availableLevels = selectedFiliere ? selectedFiliere.levels : [];
     const numericAvailableLevels = availableLevels.filter(level => typeof level === 'number') as number[];
+
+    // Helper to generate a secure password
+    const generatePassword = () => {
+      const length = 12;
+      const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+      let password = '';
+      while (true) {
+        password = Array.from({ length }, () => charset[Math.floor(Math.random() * charset.length)]).join('');
+        if (/[a-z]/.test(password) && /[A-Z]/.test(password) && /[0-9]/.test(password) && /[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/.test(password)) {
+          break;
+        }
+      }
+      setFormData({ ...formData, password });
+    };
 
     return (
       <div className="space-y-4">
@@ -123,8 +159,8 @@ const StudentManagement = () => {
             <Input
               id="studentId"
               value={formData.student_id || ''}
-              onChange={(e) => setFormData({ ...formData, student_id: e.target.value })}
-              disabled={!!selectedStudent}
+              onChange={(e) => setFormData({ ...formData, student_id: e.target.value, password: e.target.value })}
+              disabled={!isEdit}
             />
           </div>
           <div>
@@ -134,9 +170,40 @@ const StudentManagement = () => {
               type="email"
               value={formData.email || ''}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              disabled={!!selectedStudent}
+              disabled={!isEdit}
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Student emails follow format: [StudentCode]@supmti.ma
+            </p>
           </div>
+        </div>
+
+        <div>
+          <Label htmlFor="password">Password</Label>
+          <div className="flex items-center space-x-2">
+            <Input
+              id="password"
+              type={showNewPassword ? "text" : "password"}
+              value={formData.password || formData.student_id || ''}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              placeholder={selectedStudent ? "Leave blank to keep current password" : "Enter password"}
+              className="h-10"
+              disabled={!isEdit}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowNewPassword((v) => !v)}
+              className="h-10 px-3"
+              style={{ minWidth: 0 }}
+            >
+              {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </Button>
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            Default password for students is their Student ID
+          </p>
         </div>
 
         <div className="grid grid-cols-3 gap-4">
@@ -229,8 +296,8 @@ const StudentManagement = () => {
         <div className="flex justify-end">
           <Button onClick={() => handleSave(formData)}>
             {selectedStudent ? 'Update Student' : 'Add Student'}
-                </Button>
-              </div>
+          </Button>
+        </div>
       </div>
     );
   };
@@ -306,7 +373,7 @@ const StudentManagement = () => {
             </div>
              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="default" onClick={() => setSelectedStudent(null)}>
+                <Button variant="default" onClick={handleOpenAddStudent}>
                   <Plus className="mr-2 h-4 w-4" /> Add New Student
                 </Button>
               </DialogTrigger>
@@ -314,7 +381,7 @@ const StudentManagement = () => {
                 <DialogHeader>
                   <DialogTitle>{selectedStudent ? 'Edit Student' : 'Add New Student'}</DialogTitle>
                 </DialogHeader>
-                <StudentForm />
+                <StudentForm generatedStudentId={generatedStudentId} generatedEmail={generatedEmail} generatedPassword={generatedPassword} />
               </DialogContent>
             </Dialog>
           </div>
