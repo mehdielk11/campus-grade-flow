@@ -79,7 +79,7 @@ const StudentDashboard = () => {
             <p className="text-sm text-gray-500">Enrolled This Semester</p>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-purple-600">{uniqueModuleIds.length}</div>
+            <div className="text-3xl font-bold text-purple-600">{studentModules.length}</div>
             <p className="text-sm text-gray-500">active modules</p>
           </CardContent>
         </Card>
