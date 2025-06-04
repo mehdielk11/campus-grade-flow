@@ -40,17 +40,23 @@ const GradeReports = () => {
     return grades.filter(g => g.module_id === selectedModuleId);
   }, [grades, selectedModuleId]);
 
-  // Compute grade distribution (numeric bins for 0-20 system)
+  // Compute grade distribution (numeric bins for 0-20 system) with equal-width bins of 2 steps
   const gradeDistributionData = useMemo(() => {
-    const bins = [
-      { range: '0-4', min: 0, max: 4.99, count: 0 },
-      { range: '5-9', min: 5, max: 9.99, count: 0 },
-      { range: '10-11', min: 10, max: 11.99, count: 0 },
-      { range: '12-13', min: 12, max: 13.99, count: 0 },
-      { range: '14-15', min: 14, max: 15.99, count: 0 },
-      { range: '16-17', min: 16, max: 17.99, count: 0 },
-      { range: '18-20', min: 18, max: 20, count: 0 },
+    // 11 bins: 0-1.99, 2-3.99, ..., 18-19.99, 20
+    const binRanges = [
+      { range: '0-1.99', min: 0, max: 1.99 },
+      { range: '2-3.99', min: 2, max: 3.99 },
+      { range: '4-5.99', min: 4, max: 5.99 },
+      { range: '6-7.99', min: 6, max: 7.99 },
+      { range: '8-9.99', min: 8, max: 9.99 },
+      { range: '10-11.99', min: 10, max: 11.99 },
+      { range: '12-13.99', min: 12, max: 13.99 },
+      { range: '14-15.99', min: 14, max: 15.99 },
+      { range: '16-17.99', min: 16, max: 17.99 },
+      { range: '18-19.99', min: 18, max: 19.99 },
+      { range: '20', min: 20, max: 20 },
     ];
+    const bins = binRanges.map(b => ({ ...b, count: 0 }));
     moduleGrades.forEach(g => {
       const val = g.module_grade ?? 0;
       for (const bin of bins) {
@@ -63,6 +69,9 @@ const GradeReports = () => {
     const total = moduleGrades.length || 1;
     return bins.map(b => ({ ...b, percentage: Math.round((b.count / total) * 100) }));
   }, [moduleGrades]);
+
+  // Find max count for dynamic Y axis
+  const maxY = Math.max(...gradeDistributionData.map(b => b.count), 1);
 
   const calculateStats = () => {
     const totalStudents = moduleGrades.length;
@@ -193,8 +202,19 @@ const GradeReports = () => {
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={gradeDistributionData}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="range" angle={-45} textAnchor="end" height={80} label={{ value: 'Grade Range', position: 'insideBottom', offset: -5 }} />
-                      <YAxis label={{ value: 'Number of Students', angle: -90, position: 'insideLeft' }} />
+                      <XAxis 
+                        dataKey="range" 
+                        interval={0} 
+                        label={{ value: 'Grade Range', position: 'insideBottom', offset: -2, style: { fontWeight: 'bold', fontSize: 14 } }}
+                        tick={{ fontSize: 13, textAnchor: 'middle' }}
+                      />
+                      <YAxis 
+                        label={{ value: 'Number of Students', angle: -90, position: 'insideLeft', style: { fontWeight: 'bold', fontSize: 14 } }} 
+                        allowDecimals={false} 
+                        domain={[0, Math.ceil(maxY * 1.1)]} 
+                        tickCount={Math.min(maxY + 1, 10)}
+                        tick={{ fontSize: 13 }}
+                      />
                       <Tooltip />
                       <Bar dataKey="count" fill="#3b82f6" />
                     </BarChart>
@@ -215,7 +235,29 @@ const GradeReports = () => {
                         outerRadius={80}
                         fill="#8884d8"
                         dataKey="count"
-                        label={({ range, percentage }) => percentage > 0 ? `${range}: ${percentage}%` : ''}
+                        label={({ range, percentage, cx, cy, midAngle, innerRadius, outerRadius, index }) => {
+                          // Calculate label position
+                          const RADIAN = Math.PI / 180;
+                          const radius = innerRadius + (outerRadius - innerRadius) * 1.2;
+                          const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                          const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                          if (percentage > 0) {
+                            return (
+                              <text
+                                x={x}
+                                y={y}
+                                fill="#222"
+                                fontWeight="bold"
+                                fontSize={15}
+                                textAnchor={x > cx ? 'start' : 'end'}
+                                dominantBaseline="central"
+                              >
+                                {`${range}: ${percentage}%`}
+                              </text>
+                            );
+                          }
+                          return null;
+                        }}
                       >
                         {gradeDistributionData.map((_, index) => (
                           <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />

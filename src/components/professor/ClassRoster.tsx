@@ -13,7 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const ClassRoster = () => {
   const { user } = useAuth();
   const { modules } = useModules();
-  const { students } = useStudents();
+  const { students, fetchStudents } = useStudents();
   const [selectedModuleId, setSelectedModuleId] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -60,6 +60,16 @@ const ClassRoster = () => {
       default: return 'bg-gray-500';
     }
   };
+
+  // Fetch students on mount and when page regains focus
+  React.useEffect(() => {
+    fetchStudents();
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') fetchStudents();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [fetchStudents]);
 
   return (
     <div className="space-y-6">
